@@ -164,7 +164,8 @@ server/
 
 - Node.js
 - Express.js
-- MongoDB (Mongoose)
+- MySql
+- Sequelize
 - dotenv
 - Winston (for logging)
 - Joi (for validation)
@@ -193,5 +194,5 @@ Distributed under the MIT License. See \`LICENSE\` for more information.
 ## 📬 Contact
 
 **Your Name**  
-📧 [you@example.com](mailto:you@example.com)  
-🔗 [github.com/yourusername](https://github.com/yourusername)
+📧 [eks607067@gmail.com](mailto:eks607067@gmail.com)  
+🔗 [github.com/Emmanuel-Tech-Dev](https://github.com/Emmanuel-Tech-Dev)
