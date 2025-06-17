@@ -1,7 +1,7 @@
 const db = require("../dbConfig/config");
 const QueryBuilder = require("../helpers/queryUtils");
 const ResponseHandler = require("../middleWare/responseHandler");
-
+const utils = require("../helpers/functions");
 class CrudOperation {
   constructor(data, config = {}) {
     this.queryString = config?.queryString;
@@ -13,23 +13,33 @@ class CrudOperation {
     this.userTableModel = config?.userTableModel;
     this.modelconfig = config?.config;
     this.sequelize = db.sequelize || db;
+    this.apiSettingsCache = new Map();
+    this.apisettings = "apisettings";
   }
 
   async readService() {
     try {
-      const query = new QueryBuilder(this.queryString, this.association, {
-        maxLimit: 500,
-        enableCache: true,
-        enableFullTextSearch: true,
-        enableQueryLogging: true,
-        queryTimeout: 15000,
-      });
+      const query = new QueryBuilder(this.queryString, this.association);
+
+      let getApiQueryConfig;
+
+      // Check cache first
+      if (this.apiSettingsCache.has(this.apisettings)) {
+        getApiQueryConfig = this.apiSettingsCache.get(this.apisettings);
+      } else {
+        // Fetch from DB and cache it
+        getApiQueryConfig = await utils.getConfigSettings(this.apisettings);
+        this.apiSettingsCache.set(this.apisettings, getApiQueryConfig);
+      }
+
+      query.configSettings = getApiQueryConfig;
+
       const options = query.build();
 
-      console.log("All options form query string", options);
+      const start = Date.now();
 
       const { count, rows } = await this.tableModel.findAndCountAll(options);
-
+      const end = Date.now();
       const totalPages = Math.ceil(count / options.limit);
       if (this.queryString.page > totalPages && count > 0) {
         options.offset = (totalPages - 1) * options.limit;
@@ -54,7 +64,7 @@ class CrudOperation {
       //   filters: count === 0 ? {} : query.query,
       // };
 
-      console.log(query.getRecommendedIndexes());
+      query._recordQueryStats(end - start);
       const response = {
         success: true,
         message: count === 0 ? "No data found" : "Data successfully fetched",

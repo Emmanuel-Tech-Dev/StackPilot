@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const { db } = require("../dbConfig/config");
+const db = require("../dbConfig/config");
 const { Model, DataTypes, Sequelize } = require("sequelize");
 
 const utils = {
@@ -287,6 +287,29 @@ const utils = {
     }
 
     return defaultValue;
+  },
+
+  async getConfigSettings(modelName = "") {
+    try {
+      const SETTINGS = db.models[modelName];
+      const response = await SETTINGS.findAll();
+      const obj = {};
+      for (const item of response) {
+        let value = item.value;
+        if (value === "true") {
+          value = true;
+        } else if (value === "false") {
+          value = false;
+        } else if (!isNaN(value) && value.trim() !== "") {
+          // Only convert to number if it's not an empty string and is a valid number
+          value = Number(value);
+        }
+        obj[item.key] = value;
+      }
+      return obj;
+    } catch (error) {
+      throw new Error(`Operation failed!: ${error.message}`);
+    }
   },
 };
 

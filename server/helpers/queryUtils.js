@@ -41,6 +41,15 @@ class QueryBuilder {
     };
   }
 
+  set configSettings(newConfig) {
+    this.config = {
+      ...this.config,
+      ...newConfig,
+    };
+
+    console.log("setter setting the config", this.config);
+  }
+
   // Validation method to prevent query complexity explosion
   validateQuery() {
     const filterCount = Object.keys(this.Filters).length;
