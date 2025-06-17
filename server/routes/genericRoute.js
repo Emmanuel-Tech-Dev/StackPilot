@@ -11,7 +11,7 @@ const {
 
 const router = express.Router();
 
-console.log("All database Model : ", db.models);
+// console.log("All database Model : ", db.models);
 
 router
   .route("/:resources")

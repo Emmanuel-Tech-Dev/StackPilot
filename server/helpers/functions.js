@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { db } = require("../dbConfig/config");
-const { Model, DataTypes } = require("sequelize");
+const { Model, DataTypes, Sequelize } = require("sequelize");
 
 const utils = {
   generateToken: (payload, secret, expiresIn) => {
@@ -224,12 +224,12 @@ const utils = {
             (acc, col) => ({
               ...acc,
               [col.Field]: {
-                type: DataTypes[col.Type.toUpperCase()] || DataTypes.STRING,
+                type: utils.getDataType(col),
                 allowNull: col.Null === "YES",
                 primaryKey:
                   col.Key === "PRI" || col.Field.toLowerCase() === "id",
-
                 autoIncrement: col.Extra === "auto_increment",
+                defaultValue: utils.setDefaultValue(col.Default, col.Type),
               },
             }),
             {}
@@ -246,12 +246,47 @@ const utils = {
         models[tableName] = DynamicModel;
       }
 
-      console.log("Models loaded:", Object.keys(models));
+      // console.log("Models loaded:", Object.keys(models));
       return models;
     } catch (error) {
       console.error("Error loading models:", error);
       throw error;
     }
+  },
+
+  getDataType: (column) => {
+    const type = column?.Type?.toLowerCase();
+
+    if (type.includes("datetime")) {
+      return DataTypes.DATE;
+    }
+    if (type.includes("timestamp")) {
+      return DataTypes.DATE;
+    }
+    if (type.includes("date")) {
+      return DataTypes.DATEONLY;
+    }
+    // ... handle other types
+    return DataTypes.STRING;
+  },
+
+  setDefaultValue: (defaultValue, columnType) => {
+    if (defaultValue) return null;
+
+    // Handle CURRENT_TIMESTAMP and similar defaults
+    if (defaultValue?.toUpperCase() === "CURRENT_TIMESTAMP") {
+      return Sequelize.literal("CURRENT_TIMESTAMP");
+    }
+
+    // Handle other date/time defaults
+    if (
+      columnType?.toLowerCase().includes("datetime") ||
+      columnType?.toLowerCase().includes("timestamp")
+    ) {
+      return defaultValue === "NULL" ? null : Sequelize.literal(defaultValue);
+    }
+
+    return defaultValue;
   },
 };
 

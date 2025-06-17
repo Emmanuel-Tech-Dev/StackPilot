@@ -1,5 +1,6 @@
 const db = require("../dbConfig/config");
 const QueryBuilder = require("../helpers/queryUtils");
+const ResponseHandler = require("../middleWare/responseHandler");
 
 class CrudOperation {
   constructor(data, config = {}) {
@@ -11,12 +12,21 @@ class CrudOperation {
     this.authID = config?.authID;
     this.userTableModel = config?.userTableModel;
     this.modelconfig = config?.config;
+    this.sequelize = db.sequelize || db;
   }
 
   async readService() {
     try {
-      const query = new QueryBuilder(this.queryString, this.association);
+      const query = new QueryBuilder(this.queryString, this.association, {
+        maxLimit: 500,
+        enableCache: true,
+        enableFullTextSearch: true,
+        enableQueryLogging: true,
+        queryTimeout: 15000,
+      });
       const options = query.build();
+
+      console.log("All options form query string", options);
 
       const { count, rows } = await this.tableModel.findAndCountAll(options);
 
@@ -29,12 +39,29 @@ class CrudOperation {
       // Format the response data
       const formattedRows = rows.map((row) => row.get({ plain: true }));
 
+      // response._statusCode = count === 0 ? 404 : 200;
+      // response._message =
+      //   count === 0 ? "No data found" : "Data successfully fetched";
+      // response._status = "ok";
+      // response._data = formattedRows;
+      // response._metadata = {
+      //   pagination: {
+      //     totalItems: count,
+      //     totalPages,
+      //     currentPage,
+      //     limit: options.limit,
+      //   },
+      //   filters: count === 0 ? {} : query.query,
+      // };
+
+      console.log(query.getRecommendedIndexes());
       const response = {
         success: true,
         message: count === 0 ? "No data found" : "Data successfully fetched",
         status: "ok",
+        statusCode: 200,
         data: formattedRows,
-        metadata: {
+        meta: {
           pagination: {
             totalItems: count,
             totalPages,
@@ -43,6 +70,7 @@ class CrudOperation {
           },
           filters: count === 0 ? {} : query.query,
         },
+        queryStats: query.getStats(),
       };
 
       return response;
@@ -54,6 +82,8 @@ class CrudOperation {
         status: "error",
         statusCode: 404,
       };
+      console.log(error);
+
       return response;
     }
   }
@@ -121,7 +151,7 @@ class CrudOperation {
         message: count === 0 ? "No data found" : "Data successfully fetched",
         status: "ok",
         data: formattedRows,
-        metadata: {
+        meta: {
           pagination: {
             totalItems: count,
             totalPages,
@@ -146,6 +176,7 @@ class CrudOperation {
   }
 
   async createService() {
+    let dbTransaction;
     try {
       const {
         mainModel, // The model we're creating a record for
@@ -155,13 +186,13 @@ class CrudOperation {
       } = this.modelconfig;
 
       const { user_custom_id, assoc_custom_id, ...recordData } = this.data;
-      const transaction = await db.transaction();
+      dbTransaction = await this.sequelize.dbTransaction();
 
       // 1. Validate user
       const user = await userModel.findOne({
         where: { custom_id: user_custom_id },
         attributes: ["custom_id"],
-        transaction,
+        dbTransaction,
       });
 
       if (!user) {
@@ -175,7 +206,7 @@ class CrudOperation {
       // 2. Prepare base record data
       const baseRecordData = {
         ...recordData,
-        user_custom_id: user.custom_id,
+        user_custom_id: user?.custom_id,
         // description: customFields.defaultDescription || "incomplete",
       };
 
@@ -194,12 +225,13 @@ class CrudOperation {
               custom_id: assoc_custom_id,
             },
             attributes: ["id", "custom_id"],
-            transaction,
+            dbTransaction,
           });
 
           //   console.log(associatedRecord);
           if (!associatedRecord) {
-            await transaction.rollback();
+            if (dbTransaction) await dbTransaction.rollback();
+
             return {
               message: "Related record not found",
               status: "error",
@@ -219,7 +251,7 @@ class CrudOperation {
             if (Object.keys(updateData).length > 0) {
               await associatedModel.update(updateData, {
                 where: { custom_id: associatedRecord.custom_id },
-                transaction,
+                dbTransaction,
               });
             }
           }
@@ -230,27 +262,28 @@ class CrudOperation {
           }
         } catch (assocError) {
           console.error("Error handling associated record:", assocError);
-          await transaction.rollback();
+          if (dbTransaction) await dbTransaction.rollback();
           return {
             message: "Error handling associated record",
             status: "error",
             statusCode: 500,
+            serverError: assocError,
           };
         }
       }
 
       // 4. Create the record
-      const record = await mainModel.create(baseRecordData, { transaction });
+      const record = await mainModel.create(baseRecordData, { dbTransaction });
 
       if (!record) {
-        await transaction.rollback();
+        await dbTransaction.rollback();
         return {
           message: "Data not created",
           status: "error",
           statusCode: 400,
         };
       }
-      await transaction.commit();
+      await dbTransaction.commit();
       return {
         message: "Data successfully created",
         status: "ok",
@@ -258,7 +291,7 @@ class CrudOperation {
       };
     } catch (error) {
       console.error("Error creating record:", error);
-      await transaction.rollback();
+      await dbTransaction.rollback();
       return {
         message: "Internal server error",
         status: "error",

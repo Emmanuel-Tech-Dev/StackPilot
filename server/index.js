@@ -87,7 +87,10 @@ async function startServer() {
     console.log("Connected to MySQL database");
 
     console.log("Database synced successfully");
-    console.log("Table models synchronized");
+
+    if (models) {
+      console.log("Table models synchronized");
+    }
 
     app.listen(PORT, () => {
       console.log(`Server started on port ${PORT}`);

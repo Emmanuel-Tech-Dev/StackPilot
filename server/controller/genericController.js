@@ -9,27 +9,27 @@ const genericController = {
   getAll: async (req, res) => {
     try {
       const queryString = req.query;
-
+      const Goals = db.models.goals;
       const model = req.model;
       const association = {
-        // user: {
-        //   model: User,
-        //   attributes: ["name"],
-        // },
+        user: {
+          model: Goals,
+          // attributes: ["name"],
+        },
       };
       // /
-      const associations = await utils.getDynamicAssociation(model);
+      // const associations = await utils.getDynamicAssociation(model);
 
       const config = {
         queryString,
         tableModel: model,
-        association: associations,
+        association /*associations*/,
       };
 
       // console.log(model);
       const operation = new CrudOperation(undefined, config);
       const results = await operation.readService();
-      return res.status(results?.success ? 200 : 404).json(results);
+      return res.status(results?.statusCode).json(results);
     } catch (error) {
       console.log(error);
       return handleErrorResponse(res, 500, "internal server error", "error");
