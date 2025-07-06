@@ -1,5 +1,5 @@
 const express = require("express");
-const db = require("./dbConfig/config");
+const db = require("./shared/dbConfig/config.js");
 
 // const customModels = require("./model/customModels/index.js");
 // const AdiminPath = require("./model/AdminPath.js");
@@ -17,10 +17,12 @@ const helmet = require("helmet");
 // const weeklyRoute = require("./routes/weeklyRoute.js");
 // const dailyRoute = require("./routes/dailyRoute.js");
 // const taskRoute = require("./routes/taskRoute.js");
-const genericRoute = require("./routes/genericRoute.js");
-const authRoute = require("./routes/authRoute.js");
-const rbacRoutes = require("./routes/rbacRoutes.js");
-const utils = require("./helpers/functions.js");
+const baseRoute = require("./modules/base/base.route.js");
+// const authRoute = require("./routes/authRoute.js");
+// const rbacRoutes = require("./routes/rbacRoutes.js");
+const utils = require("./shared/helpers/functions.js");
+const logger = require("./shared/middleWare/logger.js");
+// const auth0 = require("./shared/dbConfig/auth0_config.js");
 // const Role = require("./model/role.js");
 // const RoleAdminPath = require("./model/RoleAdminPath.js");
 
@@ -50,6 +52,11 @@ const allowedOrigins = [
   "https://staging-app.com",
 ];
 
+app.use((err, req, res, next) => {
+  logger.error(err.message);
+  res.status(err.status || 500).json({ error: err.message });
+});
+
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -66,14 +73,21 @@ app.use(
 );
 
 app.use(helmet());
-
-app.use("/api/v1", genericRoute);
-app.use("/api/v2/auth", authRoute);
-app.use("/api/v2", rbacRoutes);
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  next();
+});
+app.use("/api/v1", baseRoute);
+// app.use("/api/v2/auth", authRoute);
+// app.use("/api/v2", rbacRoutes);
 
 app.get("/", (req, res) => {
   res.send("Hello World!");
 });
+
+// app.use(auth0);
 
 async function startServer() {
   try {
@@ -97,6 +111,11 @@ async function startServer() {
     });
   } catch (error) {
     console.error("Unable to connect to MySQL:", error);
+    logger.error({
+      message: "Unable to connect to MySQL",
+      error: error.message,
+      errorDetails: error,
+    });
   }
 }
 

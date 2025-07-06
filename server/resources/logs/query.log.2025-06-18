@@ -1,0 +1,3 @@
+2025-06-19T00:31:54.281Z [VERBOSE] {"qeuryString":{"fields":"name,progress","progress":{"gte":"10"}},"filter":{"fields":"name,progress","progress":{"gte":"10"}},"queryStats":{"executionCount":1,"totalExecutionTime":15,"slowQueries":[],"avgExecutionTime":15,"cacheSize":0}}
+2025-06-19T00:52:10.768Z [VERBOSE] {"qeuryString":{"fields":"name,progress","progress":{"gte":"10"}},"filter":{"fields":"name,progress","progress":{"gte":"10"}}}
+2025-06-19T01:19:55.014Z [VERBOSE] {"qeuryString":{},"filter":{}}
