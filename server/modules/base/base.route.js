@@ -9,10 +9,17 @@ const {
   authMiddleware,
   authorizeRoles,
 } = require("../../shared/middleWare/authMiddleware.js");
+const { uploadSingle } = require("../../shared/dbConfig/multer.js");
 
 const router = express.Router();
 
 // console.log("All database Model : ", db.models);
+
+router.post(
+  "/upload-single",
+  uploadSingle.single("file"),
+  genericController.uploadSingle
+);
 
 router
   .route("/:resources")

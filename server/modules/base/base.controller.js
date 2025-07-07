@@ -1,11 +1,14 @@
+const { default: OTP } = require("otp");
 const db = require("../../shared/dbConfig/config.js");
-const utils = require("../../shared/helpers/functions.js");
+const Utilities = require("../../shared/helpers/functions.js");
+const OTPService = require("../../shared/helpers/otpService.js");
 const {
   handleErrorResponse,
 } = require("../../shared/middleWare/errorHandler.js");
 // const { Task, User } = require("../model/customModels/index.js");
 // const modelConfig = require("../model/customModels/modelConfig.js");
 const CrudOperation = require("./base.services.js");
+const uploadService = require("../../shared/uploadService.js");
 
 const genericController = {
   getAll: async (req, res) => {
@@ -20,7 +23,15 @@ const genericController = {
         // },
       };
       // /
-      // const associations = await utils.getDynamicAssociation(model);
+      // const associations = await Utilities.getDynamicAssociation(model);
+
+      // const otp = new OTPService();
+      // const secret = otp.generateOtpSecret();
+      // const code =  otp.generateQrCode(secret);
+
+      // console.log("otp secret :", secret);
+      // console.log("otp code :", code);
+      // console.log("otp isValid :" ,)
 
       const config = {
         queryString,
@@ -74,9 +85,9 @@ const genericController = {
   create: async (req, res) => {
     try {
       const model = req.model;
-      const body = req.validatedBody;
-      const User = db.models.users;
-      const modelConfig = await utils.getDynamicAssociation(model);
+      const body = req.body;
+      const User = db.models.admin;
+      const modelConfig = await Utilities.getDynamicAssociation(model);
       // Get model-specific configuration
       const config = {
         config: {
@@ -157,6 +168,33 @@ const genericController = {
     } catch (error) {
       console.log(error);
       return handleErrorResponse(res, 500, "internal server error", "error");
+    }
+  },
+
+  async uploadSingle(req, res) {
+    try {
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({
+          success: false,
+          error: "No file uploaded",
+        });
+      }
+
+      const result = await uploadService.uploadSingleFile(file);
+
+      res.json({
+        success: true,
+        message: "File uploaded successfully",
+        data: result,
+      });
+    } catch (error) {
+      console.error("Upload error:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message || "Upload failed",
+      });
     }
   },
 };

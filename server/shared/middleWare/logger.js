@@ -1,9 +1,13 @@
 const winston = require("winston");
 const path = require("path");
 require("winston-daily-rotate-file");
+const fs = require("fs");
 
-const logPath = path.join(__dirname, "../resources/", "logs");
+const logPath = path.join(__dirname, "../../resources/", "logs");
 
+if (!fs.existsSync(logPath)) {
+  fs.mkdirSync(logPath, { recursive: true });
+}
 // Log categories with their configurations
 const LOG_TYPES = {
   access: { file: "access.log", level: "http" },
@@ -41,7 +45,7 @@ const ensureTransport = (type) => {
       datePattern: "YYYY-MM-DD",
       zippedArchive: true,
       maxSize: "10m",
-      maxFiles: "14d",
+      maxFiles: "30d",
       level: config.level,
       format: logFormat,
     });
@@ -63,7 +67,7 @@ const log = (type, message) => {
 // Export logger with category methods
 module.exports = Object.assign(logger, {
   access: (msg) => log("access", msg),
-  errorLog: (msg) => log("error", msg),
+  error: (msg) => log("error", msg),
   query: (msg) => log("query", msg),
   security: (msg) => log("security", msg),
   performance: (msg) => log("performance", msg),

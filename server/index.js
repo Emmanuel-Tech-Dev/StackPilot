@@ -20,7 +20,7 @@ const helmet = require("helmet");
 const baseRoute = require("./modules/base/base.route.js");
 // const authRoute = require("./routes/authRoute.js");
 // const rbacRoutes = require("./routes/rbacRoutes.js");
-const utils = require("./shared/helpers/functions.js");
+const Utilities = require("./shared/helpers/functions.js");
 const logger = require("./shared/middleWare/logger.js");
 // const auth0 = require("./shared/dbConfig/auth0_config.js");
 // const Role = require("./model/role.js");
@@ -92,7 +92,7 @@ app.get("/", (req, res) => {
 async function startServer() {
   try {
     await db.authenticate();
-    const models = await utils.loadDynamicModels(db);
+    const models = await Utilities.loadDynamicModels(db);
 
     Object.assign(db.models, models);
 

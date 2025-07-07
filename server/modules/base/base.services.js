@@ -1,7 +1,7 @@
 const db = require("../../shared/dbConfig/config");
 const QueryBuilder = require("../../shared/helpers/queryUtils");
 // const ResponseHandler = require("../../shared/middleWare/responseHandler");
-const utils = require("../../shared/helpers/functions");
+const Utilities = require("../../shared/helpers/functions");
 const logger = require("../../shared/middleWare/logger");
 class CrudOperation {
   static apisettings = "apisettings";
@@ -26,7 +26,7 @@ class CrudOperation {
       let getApiQueryConfig;
 
       if (SETTINGS_KEY) {
-        getApiQueryConfig = await utils.cacheConfigSettings(SETTINGS_KEY);
+        getApiQueryConfig = await Utilities.cacheConfigSettings(SETTINGS_KEY);
       }
 
       const query = new QueryBuilder(
@@ -215,24 +215,29 @@ class CrudOperation {
       } = this.modelconfig;
 
       const { user_custom_id, assoc_custom_id, ...recordData } = this.data;
-      dbTransaction = await this.sequelize.dbTransaction();
+      // console.log("data from postman", this.data);
+      let user;
+
+      dbTransaction = await this.sequelize.transaction();
 
       // 1. Validate user
-      const user = await userModel.findOne({
-        where: { custom_id: user_custom_id },
-        attributes: ["custom_id"],
-        dbTransaction,
-      });
+      if (user_custom_id) {
+        user = await userModel.findOne({
+          where: { custom_id: user_custom_id },
+          attributes: ["custom_id"],
+          // dbTransaction,
+        });
 
-      if (!user) {
-        const response = {
-          message: "User not found",
-          status: "error",
-          statusCode: 404,
-        };
-        if (dbTransaction) await dbTransaction.rollback();
-        // logger.error(response);
-        return response;
+        if (!user) {
+          const response = {
+            message: "User not found",
+            status: "error",
+            statusCode: 404,
+          };
+          if (dbTransaction) await dbTransaction.rollback();
+          // logger.error(response);
+          return response;
+        }
       }
 
       // 2. Prepare base record data
@@ -313,14 +318,15 @@ class CrudOperation {
       const record = await mainModel.create(baseRecordData, { dbTransaction });
 
       if (!record) {
-        await dbTransaction.rollback();
+        if (dbTransaction) await dbTransaction.rollback(); // <-- Add this check
+
         return {
           message: "Data not created",
           status: "error",
           statusCode: 400,
         };
       }
-      await dbTransaction.commit();
+      if (dbTransaction) await dbTransaction.commit(); // <-- Add this check
       return {
         message: "Data successfully created",
         status: "ok",
@@ -328,7 +334,7 @@ class CrudOperation {
       };
     } catch (error) {
       console.error("Error creating record:", error);
-      await dbTransaction.rollback();
+      if (dbTransaction) await dbTransaction.rollback(); // <-- Add this check
       const response = {
         success: false,
         message: "Operation failed!",

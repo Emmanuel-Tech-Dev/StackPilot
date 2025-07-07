@@ -4,11 +4,10 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const db = require("../dbConfig/config.js");
 const NodeCache = require("node-cache");
+const uuuid = require("uuid").v4;
+const otp = require("otp");
 
 const { Model, DataTypes, Sequelize } = require("sequelize");
-const winston = require("winston");
-const path = require("path");
-require("winston-daily-rotate-file");
 
 const ENCRYPTION_KEY = Buffer.from(
   process.env.ENCRYPTION_KEY,
@@ -18,7 +17,7 @@ const IV_LENGTH = 16;
 
 const cache = new NodeCache({ stdTTL: 3600 }); // 5 mins TTL
 
-const utils = {
+const Utilities = {
   encrypt: (text) => {
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv("aes-256-cbc", ENCRYPTION_KEY, iv);
@@ -43,15 +42,19 @@ const utils = {
     return jwt.sign(payload, secret, { expiresIn });
   },
 
-  generateTokens: (user) => {
+  generateAuthTokens: (user) => {
     const payload = {
       id: user.id,
       email: user.email,
     };
 
     return {
-      accessToken: utils.generateToken(payload, process.env.JWT_SECRET, "15m"),
-      refreshToken: utils.generateToken(
+      accessToken: Utilities.generateToken(
+        payload,
+        process.env.JWT_SECRET,
+        "15m"
+      ),
+      refreshToken: Utilities.generateToken(
         payload,
         process.env.REFRESH_TOKEN_SECRET,
         "7d"
@@ -69,8 +72,12 @@ const utils = {
     };
 
     return {
-      accessToken: utils.generateToken(payload, process.env.JWT_SECRET, "15m"),
-      refreshToken: utils.generateToken(
+      accessToken: Utilities.generateToken(
+        payload,
+        process.env.JWT_SECRET,
+        "15m"
+      ),
+      refreshToken: Utilities.generateToken(
         payload,
         process.env.REFRESH_TOKEN_SECRET,
         "7d"
@@ -152,6 +159,19 @@ const utils = {
 
   comparePassword: async (password, hashedPassword) => {
     return await bcrypt.compare(password, hashedPassword);
+  },
+
+  generateOtpSecret() {
+    const secret = otp.utils.generateKey();
+    return secret;
+  },
+  generateOtpCode(secret) {
+    const code = otp.totp.gen(secret);
+    return code;
+  },
+  verifyOtp(inputCode, secret) {
+    const isValidOtp = otp.totp.check(inputCode, secret);
+    return isValidOtp;
   },
 
   sendOtpPin: async (email, html, subject) => {
@@ -259,12 +279,12 @@ const utils = {
             (acc, col) => ({
               ...acc,
               [col.Field]: {
-                type: utils.getDataType(col),
+                type: Utilities.getDataType(col),
                 allowNull: col.Null === "YES",
                 primaryKey:
                   col.Key === "PRI" || col.Field.toLowerCase() === "id",
                 autoIncrement: col.Extra === "auto_increment",
-                defaultValue: utils.setDefaultValue(col.Default, col.Type),
+                defaultValue: Utilities.setDefaultValue(col.Default, col.Type),
               },
             }),
             {}
@@ -344,7 +364,7 @@ const utils = {
       const response = await SETTINGS.findAll();
       const obj = {};
       for (const item of response) {
-        let value = JSON.parse(item.value); // utils.parseValue(item.value;
+        let value = JSON.parse(item.value); // Utilities.parseValue(item.value;
         obj[item.key] = value;
       }
       return obj;
@@ -360,7 +380,7 @@ const utils = {
       return config;
     }
 
-    const config = await utils.getConfigSettings(modelName);
+    const config = await Utilities.getConfigSettings(modelName);
     cache.set(modelName, config);
     return config;
   },
@@ -370,4 +390,4 @@ const utils = {
   },
 };
 
-module.exports = utils;
+module.exports = Utilities;

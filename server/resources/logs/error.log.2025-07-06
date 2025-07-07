@@ -1,0 +1,1 @@
+2025-07-06T22:13:40.473Z [ERROR] {"message":"Unable to connect to MySQL","error":"","errorDetails":{"name":"SequelizeConnectionRefusedError","parent":{"code":"ECONNREFUSED","fatal":true},"original":{"code":"ECONNREFUSED","fatal":true}}}
