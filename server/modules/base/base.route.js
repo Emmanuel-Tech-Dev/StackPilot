@@ -5,28 +5,25 @@ const genericController = require("./base.controller.js");
 const validateModel = require("../../shared/middleWare/validateModel.js");
 // const validateSchema = require("../../shared/middleWare/validateSchema.js");
 // const { Task, Goals, TwelveWeekYear, Week } = require("../model/index.js");
-const {
-  authMiddleware,
-  authorizeRoles,
-} = require("../../shared/middleWare/authMiddleware.js");
+const authMiddleware = require("../../shared/middleWare/authMiddleware.js");
 const { uploadSingle } = require("../../shared/dbConfig/multer.js");
 
 const router = express.Router();
 
 // console.log("All database Model : ", db.models);
 
-router.post(
-  "/upload-single",
-  uploadSingle.single("file"),
-  genericController.uploadSingle
-);
+// router.post(
+//   "/upload-single",
+//   uploadSingle.single("file"),
+//   genericController.uploadSingle
+// );
 
 router
   .route("/:resources")
   .get(
     validateModel(db.models),
     // validateSchema()
-    // authMiddleware,
+    authMiddleware,
     // authorizeRoles,
     genericController.getAll
   )

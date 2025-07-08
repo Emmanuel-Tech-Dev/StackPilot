@@ -89,7 +89,7 @@ class CrudOperation {
         ...response,
         errorDetails: error,
       });
-      console.log(error);
+      // console.log(error);
 
       return response;
     }
@@ -110,7 +110,7 @@ class CrudOperation {
       }
       const response = {
         message: "Data successfully fetched",
-        status: "ok",
+        status: "Ok",
         data: record,
         statusCode: 200,
       };
@@ -167,7 +167,7 @@ class CrudOperation {
       const response = {
         success: true,
         message: count === 0 ? "No data found" : "Data successfully fetched",
-        status: "ok",
+        status: "Ok",
         data: formattedRows,
         meta: {
           pagination: {
@@ -329,7 +329,7 @@ class CrudOperation {
       if (dbTransaction) await dbTransaction.commit(); // <-- Add this check
       return {
         message: "Data successfully created",
-        status: "ok",
+        status: "Ok",
         data: record,
       };
     } catch (error) {
@@ -380,7 +380,7 @@ class CrudOperation {
       }
       return (data = {
         message: "Data successfully updated",
-        status: "ok",
+        status: "Ok",
         // statusCode: 200,
       });
     } catch (error) {
@@ -426,7 +426,7 @@ class CrudOperation {
       }
       const response = {
         message: "Data successfully deleted",
-        status: "ok",
+        status: "Ok",
         statusCode: 201,
       };
       return response;

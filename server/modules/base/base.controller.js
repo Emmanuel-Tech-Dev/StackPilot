@@ -171,32 +171,74 @@ const genericController = {
     }
   },
 
-  async uploadSingle(req, res) {
-    try {
-      const file = req.file;
+  // async uploadSingle(req, res) {
+  //   try {
+  //     const file = req.file;
+  //     const body = req.body;
+  //     const convertBody = JSON.parse(body.body);
 
-      if (!file) {
-        return res.status(400).json({
-          success: false,
-          error: "No file uploaded",
-        });
-      }
+  //     console.log(convertBody);
+  //     // return;
 
-      const result = await uploadService.uploadSingleFile(file);
+  //     if (!file) {
+  //       return res.status(400).json({
+  //         success: false,
+  //         error: "No file uploaded",
+  //       });
+  //     }
 
-      res.json({
-        success: true,
-        message: "File uploaded successfully",
-        data: result,
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      res.status(500).json({
-        success: false,
-        error: error.message || "Upload failed",
-      });
-    }
-  },
+  //     const User = db.models.admin;
+  //     const Goals = db.models.goals;
+  //     // const modelConfig = await Utilities.getDynamicAssociation(model);
+  //     // Get model-specific configuration
+  //     // const config = {
+  //     //   config: {
+  //     //     mainModel: model,
+  //     //     userModel: User,
+  //     //     associationConfig: modelConfig[model.name]?.associationConfig,
+  //     //     customFields:
+  //     //       modelConfig[model.name]?.associationConfig?.customIdField,
+  //     //   },
+  //     // };
+  //     const results = await uploadService.uploadSingleFile(file, "New Project");
+
+  //     const dataWithFile = {
+  //       ...convertBody,
+  //       file_path: results.url,
+  //       file_type: results.resource_type,
+  //     };
+
+  //     // const data = new CrudOperation(dataWithFile, config);
+  //     // const result = await data.createService();
+
+  //     // console.log(dataWithFile);
+  //     // return;
+  //     const result = await Goals.create(dataWithFile);
+
+  //     //   console.log(result);
+
+  //     if (result.status === "error") {
+  //       return handleErrorResponse(
+  //         res,
+  //         result.statusCode,
+  //         result.message,
+  //         result.status
+  //       );
+  //     }
+
+  //     res.json({
+  //       success: true,
+  //       message: "File and data uploaded successfully",
+  //       // data: result,
+  //     });
+  //   } catch (error) {
+  //     console.error("Upload error:", error);
+  //     res.status(500).json({
+  //       success: false,
+  //       error: error.message || "Upload failed",
+  //     });
+  //   }
+  // },
 };
 
 module.exports = genericController;

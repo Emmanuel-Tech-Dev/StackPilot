@@ -36,12 +36,15 @@ class UploadService {
         throw new Error("No file buffer or path found");
       }
 
+      console.log("file struture", result);
+
       return {
         url: result.secure_url,
         public_id: result.public_id,
         resource_type: result.resource_type,
         format: result.format,
         size: result.bytes,
+        filename: result.display_name,
       };
     } catch (error) {
       // Clean up temporary file on error

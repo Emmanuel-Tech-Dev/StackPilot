@@ -18,6 +18,8 @@ const helmet = require("helmet");
 // const dailyRoute = require("./routes/dailyRoute.js");
 // const taskRoute = require("./routes/taskRoute.js");
 const baseRoute = require("./modules/base/base.route.js");
+const uploadRoute = require("./modules/upload/upload.route.js");
+const userRoute = require("./modules/user/user.route.js");
 // const authRoute = require("./routes/authRoute.js");
 // const rbacRoutes = require("./routes/rbacRoutes.js");
 const Utilities = require("./shared/helpers/functions.js");
@@ -80,6 +82,9 @@ app.use((req, res, next) => {
   next();
 });
 app.use("/api/v1", baseRoute);
+app.use("/api/v1/auth", userRoute);
+app.use("/api/v2", uploadRoute);
+
 // app.use("/api/v2/auth", authRoute);
 // app.use("/api/v2", rbacRoutes);
 
@@ -93,7 +98,7 @@ async function startServer() {
   try {
     await db.authenticate();
     const models = await Utilities.loadDynamicModels(db);
-
+    // console.log(models);
     Object.assign(db.models, models);
 
     await db.sync({ force: false });

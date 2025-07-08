@@ -5,7 +5,7 @@ const validateModel = (models) => {
     // console.log(models);
     // Access the model directly from models object
     const Model = models[modelName];
-
+    // console.log(Model);
     if (!Model) {
       return res.status(400).json({
         success: false,

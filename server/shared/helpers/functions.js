@@ -4,10 +4,11 @@ const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 const db = require("../dbConfig/config.js");
 const NodeCache = require("node-cache");
-const uuuid = require("uuid").v4;
+const { v4: uuidv4 } = require("uuid");
 const otp = require("otp");
 
 const { Model, DataTypes, Sequelize } = require("sequelize");
+const { add } = require("winston");
 
 const ENCRYPTION_KEY = Buffer.from(
   process.env.ENCRYPTION_KEY,
@@ -16,6 +17,7 @@ const ENCRYPTION_KEY = Buffer.from(
 const IV_LENGTH = 16;
 
 const cache = new NodeCache({ stdTTL: 3600 }); // 5 mins TTL
+const tokenBlacklistSet = new Set();
 
 const Utilities = {
   encrypt: (text) => {
@@ -38,6 +40,14 @@ const Utilities = {
     return decrypted;
   },
 
+  generateCustomId(prefix = "USR", length = 6) {
+    const uuid = uuidv4().replace(/-/g, "");
+    const hexPart = uuid.slice(0, 12); // take first 12 hex characters
+    const numeric = parseInt(hexPart, 16).toString().slice(0, length); // convert to number, take first N digits
+
+    return `${prefix}-${numeric}`;
+  },
+
   generateToken: (payload, secret, expiresIn) => {
     return jwt.sign(payload, secret, { expiresIn });
   },
@@ -45,6 +55,7 @@ const Utilities = {
   generateAuthTokens: (user) => {
     const payload = {
       id: user.id,
+      custom_id: user.custom_id,
       email: user.email,
     };
 
@@ -95,6 +106,29 @@ const Utilities = {
         }
       });
     }),
+
+  verifyRefereshToken: (token) =>
+    new Promise((resolve, reject) => {
+      jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (error, decoded) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve(decoded);
+        }
+      });
+    }),
+
+  tokenBlacklist: {
+    add(token) {
+      tokenBlacklistSet.add(token);
+    },
+    has(token) {
+      return tokenBlacklistSet.has(token);
+    },
+    remove(token) {
+      tokenBlacklistSet.delete(token);
+    },
+  },
 
   sendResetLink: async (email, html, subject) => {
     const transpoter = nodemailer.createTransport({
