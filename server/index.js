@@ -82,10 +82,10 @@ app.use((req, res, next) => {
   next();
 });
 app.use("/api/v1", baseRoute);
-app.use("/api/v1/auth", userRoute);
+app.use("/api/v1.0/auth", userRoute);
 app.use("/api/v2", uploadRoute);
 
-// app.use("/api/v2/auth", authRoute);
+// app.use("/api/v2/auth", userRoute);
 // app.use("/api/v2", rbacRoutes);
 
 app.get("/", (req, res) => {

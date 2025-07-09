@@ -23,3 +23,6 @@
 2025-07-08T04:26:36.138Z [WARN] {"event":"refresh_token_success","ip":"::1","userId":3,"status":"success","timestamp":"2025-07-08T04:26:36.138Z"}
 2025-07-08T04:46:53.081Z [WARN] {"event":"refresh_token_success","ip":"::1","userId":3,"status":"success","timestamp":"2025-07-08T04:46:53.067Z"}
 2025-07-08T04:47:39.139Z [WARN] {"event":"refresh_token_success","ip":"::1","userId":3,"status":"success","timestamp":"2025-07-08T04:47:39.138Z"}
+2025-07-08T07:43:24.814Z [WARN] {"event":"refresh_token_success","ip":"::1","userId":3,"status":"success","timestamp":"2025-07-08T07:43:24.786Z"}
+2025-07-08T07:43:58.464Z [WARN] {"event":"refresh_token_success","ip":"::1","userId":3,"status":"success","timestamp":"2025-07-08T07:43:58.463Z"}
+2025-07-08T07:51:58.453Z [WARN] {"event":"failed_authentication","ip":"::1","email":"emmanuelkusi345@gmail.com","message":"User not active","timestamp":"2025-07-08T07:51:58.424Z"}

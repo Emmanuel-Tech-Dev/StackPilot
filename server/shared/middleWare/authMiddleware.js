@@ -24,16 +24,16 @@ const authMiddleware = async (req, res, next) => {
     token = token.slice(7).trim();
   }
 
-  const tokenBlacklist = Utilities.tokenBlacklist.has(token);
+  const blackList = Utilities.blackList();
 
-  if (tokenBlacklist) {
+  if (blackList.has(token)) {
     return res
       .status(401)
       .json({ message: "Unauthorized: Token is blacklisted" });
   }
   try {
     const user = await Utilities.verifyToken(token);
-    console.log(user);
+    // console.log(user);
     req.user = user;
     next();
   } catch (error) {

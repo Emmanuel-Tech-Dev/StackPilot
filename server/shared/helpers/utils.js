@@ -1,4 +1,4 @@
-const utils = {
+const tempUtils = {
   otpTemplate: (otp) => {
     const html = `
         <body style="font-family: Helvetica, Arial, sans-serif; margin: 0px; padding: 0px; background-color: #ffffff;">
@@ -84,4 +84,4 @@ const utils = {
   },
 };
 
-module.exports = utils;
+module.exports = tempUtils;

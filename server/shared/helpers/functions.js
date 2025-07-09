@@ -118,16 +118,20 @@ const Utilities = {
       });
     }),
 
-  tokenBlacklist: {
-    add(token) {
-      tokenBlacklistSet.add(token);
-    },
-    has(token) {
-      return tokenBlacklistSet.has(token);
-    },
-    remove(token) {
-      tokenBlacklistSet.delete(token);
-    },
+  blackList() {
+    const tokenBlacklist = {
+      add(token) {
+        tokenBlacklistSet.add(token);
+      },
+      has(token) {
+        return tokenBlacklistSet.has(token);
+      },
+      remove(token) {
+        tokenBlacklistSet.delete(token);
+      },
+    };
+
+    return tokenBlacklist;
   },
 
   sendResetLink: async (email, html, subject) => {
