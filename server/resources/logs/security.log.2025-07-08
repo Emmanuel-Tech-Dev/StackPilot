@@ -17,3 +17,4 @@
 2025-07-09T03:44:37.449Z [WARN] {"event":"password_reset_verification","ip":"::1","success":false,"status":"error","statusCode":400,"message":"Operation failed: Passwords do not match","timestamp":"2025-07-09T03:44:37.432Z"}
 2025-07-09T03:45:21.014Z [WARN] {"event":"failed_authentication","ip":"::1","email":"emmanuelkusi345@gmail.com","message":"Invalid password","timestamp":"2025-07-09T03:45:21.000Z"}
 2025-07-09T03:45:32.407Z [WARN] {"event":"authenticate_user","ip":"::1","email":"emmanuelkusi345@gmail.com","userId":3,"status":"success","timestamp":"2025-07-09T03:45:32.406Z"}
+2025-07-09T04:10:36.829Z [WARN] {"event":"password_reset_verification","ip":"::1","success":false,"status":"error","statusCode":500,"message":"Operation failed: sever error","errorMessage":"Unable to decrypt secret","timestamp":"2025-07-09T04:10:36.807Z"}

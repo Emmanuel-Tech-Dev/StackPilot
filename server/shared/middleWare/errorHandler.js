@@ -1,17 +1,17 @@
-const handleErrorResponse = (res, statusCode, message, status, errMessage) => {
-  return res.status(statusCode).json({ message, status, errMessage });
-};
+const AppError = require("../helpers/appError");
 
-// Middleware for handling errors
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
 const errorHandler = (err, req, res, next) => {
-  console.error(err.stack); // Log error details to the console
+  if (!(err instanceof AppError)) {
+    err = new AppError(err.message || "Internal Server Error", 500);
+  }
 
-  // Default to 500 if no specific status code is provided
-  const status = "ok" || "error";
-  const statusCode = err.statusCode || 500;
-  const message = err.message || "Internal Server Error";
-
-  return handleErrorResponse(res, statusCode, status, message);
+  res.status(err.statusCode).json(err.toJSON());
 };
 
-module.exports = { handleErrorResponse, errorHandler };
+module.exports = {
+  errorHandler,
+  asyncHandler,
+};

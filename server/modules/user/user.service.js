@@ -2,31 +2,47 @@ const db = require("../../shared/dbConfig/config");
 const Utilities = require("../../shared/helpers/functions");
 const otpService = require("../../shared/helpers/otpService");
 const tempUtils = require("../../shared/helpers/utils");
+const AppError = require("../../shared/helpers/appError");
 const logger = require("../../shared/middleWare/logger");
-const crypto = require("crypto");
 
 class UserService {
-  // constructor(data , req){
-  //   this.createUserAccount(data , req)
-  //   this.
-  // }
+  constructor(event) {
+    this.event = event;
+  }
 
   static ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 
+  static logEvent(event) {
+    return new UserService(event);
+  }
+
   async createUserAccount(data, req) {
     try {
-      const { password } = data;
-      //   console.log(password);
-      //   return;
+      const { password, email } = data;
+
       const User = db.models.admin;
-      if (!data) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 404,
-          message: "Operation failed! Data not found",
-        };
-        return response;
+      if (!email || !password) {
+        throw new AppError(
+          "Operation failed! missing required fields",
+          400,
+          "ValidationError",
+          { ...data },
+          { ip: req.ip, event: this.event }
+        );
+      }
+
+      const existingUser = User.findOne({
+        where: { email },
+      });
+
+      if (existingUser) {
+        throw new AppError(
+          "User already exist",
+          409,
+          "AuthError",
+          { email: data?.email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const hashedPassword = await Utilities.hashPassword(password);
@@ -47,31 +63,21 @@ class UserService {
       };
 
       logger.security({
-        event: "create_User_Account",
+        event: "user_account_creation_success",
         ip: req.ip,
         ...response,
         timestamp: new Date().toISOString(),
       });
       return response;
     } catch (error) {
-      const response = {
-        success: false,
-        status: "error",
-        statusCode: 500,
-        message: "Operation failed!: User account creation failed",
-        errorMessage: error.message,
-      };
-
-      logger.security({
-        event: "create_User_Account",
-        ip: req.ip,
-        ...response,
-        message: "User account creation failed",
-        errorDetails: error,
-        timestamp: new Date().toISOString(),
-      });
-
-      return response;
+      if (error instanceof AppError) throw error;
+      throw new AppError(
+        "Operation failed!: Service Worker Error ",
+        500,
+        "AuthError",
+        { email: data?.email, serviceError: error },
+        { ip: req.ip, event: this.event }
+      );
     }
   }
 
@@ -81,56 +87,35 @@ class UserService {
       const User = db.models.admin;
 
       if (!email || !password) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 400,
-          message: "Email and password are required",
-        };
-        logger.security({
-          event: "failed_authentication",
-          ip: req.ip,
-          email,
-          message: "Missing email or password",
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+        throw new AppError(
+          "Email and password fields required",
+          400,
+          "ValidationError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const user = await User.findOne({ where: { email } });
 
       if (!user) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 404,
-          message: "User not found",
-        };
-        logger.security({
-          event: "failed_authentication",
-          ip: req.ip,
-          email,
-          message: "User not found",
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+        throw new AppError(
+          "Operation failed!: user not found",
+          404,
+          "AuthError",
+          { email: user?.email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       if (user?.status === 0) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 404,
-          message: "User not active",
-        };
-        logger.security({
-          event: "failed_authentication",
-          ip: req.ip,
-          email,
-          message: "User not active",
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+        throw new AppError(
+          "User not active. Please contact support.",
+          403,
+          "AuthError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const isPasswordValid = await Utilities.comparePassword(
@@ -139,20 +124,13 @@ class UserService {
       );
 
       if (!isPasswordValid) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 401,
-          message: "Invalid password",
-        };
-        logger.security({
-          event: "failed_authentication",
-          ip: req.ip,
-          email,
-          message: "Invalid password",
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+        throw new AppError(
+          "Operation failed! password mismatch",
+          403,
+          "AuthError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       await User.update({ last_login: new Date() }, { where: { email } });
@@ -171,32 +149,22 @@ class UserService {
         event: "authenticate_user",
         ip: req.ip,
         email,
-        userId: user.id,
-        status: "success",
+        userId: user.custom_id,
+        ...response,
         timestamp: new Date().toISOString(),
       });
 
       return response;
     } catch (error) {
-      const response = {
-        success: false,
-        status: "error",
-        statusCode: 500,
-        message: "Authentication failed due to server error",
-        errorMessage: error.message,
-      };
+      if (error instanceof AppError) throw error;
 
-      logger.security({
-        event: "authenticate_user",
-        ip: req.ip,
-        email: data?.email,
-        status: "error",
-        message: "Authentication failed due to server error",
-        errorDetails: error.message,
-        timestamp: new Date().toISOString(),
-      });
-
-      return response;
+      throw new AppError(
+        "Authentication failed due to service worker error",
+        500,
+        "AuthError",
+        { email, serviceError: error.message },
+        { ip: req.ip, event: this.event }
+      );
     }
   }
 
@@ -210,22 +178,13 @@ class UserService {
       //   console.log(token);
       //   return;
       if (!token || !token.id) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 401,
-          message: "Invalid or expired refresh token",
-        };
-
-        logger.security({
-          event: "refresh_token_failed",
-          ip: req.ip,
-          status: "error",
-          message: "Invalid or expired refresh token",
-          timestamp: new Date().toISOString(),
-        });
-
-        return response;
+        throw new AppError(
+          "Invalid or expired refresh token",
+          400,
+          "AuthError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const user = await User.findOne({
@@ -234,13 +193,13 @@ class UserService {
       });
 
       if (!user) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 404,
-          message: "User not found",
-        };
-        return response;
+        throw new AppError(
+          "Operation failed! user not found",
+          404,
+          "AuthError",
+          { email: user?.email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const newToken = Utilities.generateAuthTokens(user);
@@ -262,23 +221,15 @@ class UserService {
 
       return response;
     } catch (error) {
-      const response = {
-        success: false,
-        status: "error",
-        statusCode: 500,
-        message: "Token refresh failed due to server error",
-        errorMessage: error,
-      };
+      if (error instanceof AppError) throw error;
 
-      logger.security({
-        event: "refresh_token_failed",
-        ip: req.ip,
-        ...response,
-        errorDetails: error,
-        timestamp: new Date().toISOString(),
-      });
-
-      return response;
+      throw new AppError(
+        "Token refresh failed due to server error",
+        500,
+        "AuthError",
+        { serviceError: error.message },
+        { ip: req.ip, event: this.event }
+      );
     }
   }
 
@@ -294,28 +245,28 @@ class UserService {
 
       const User = db.models.admin;
 
+      if (!email) {
+        throw new AppError(
+          "Operation failed! missing required fields",
+          400,
+          "AuthError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
+      }
+
       const activeUser = await User.findOne({ where: { email, status: 1 } });
 
       if (!activeUser) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 404,
-          message: "Operation failed: User not found or inactive",
-          // errorMessage: error?.message,
-        };
-
-        logger.security({
-          event: "password_reset_via_mail",
-          ip: req.ip,
-          ...response,
-          timestamp: new Date().toISOString(),
-        });
-
-        return response;
-
-        // Generate reset token and expiration
+        throw new AppError(
+          "Operation failed! user not active",
+          403,
+          "AuthError",
+          { email: user?.email },
+          { ip: req.ip, event: this.event }
+        );
       }
+
       const secret = otpService.generateOtpSecret();
       const resetToken = otpService.generateOtpCode(secret);
 
@@ -341,20 +292,14 @@ class UserService {
         await Utilities.sendResetLink(email, html, subject);
       } catch (err) {
         console.error("Error sending reset email:", err.message);
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 500,
-          message: "Operation failed: error sending reset email",
-          errorMessage: err.message,
-        };
-        logger.security({
-          event: "password_reset_via_mail",
-          ip: req.ip,
-          ...response,
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+
+        throw new AppError(
+          "Operation failed: error sending reset email",
+          503,
+          "AuthError",
+          { email: user?.email, mailerError: err?.message },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const response = {
@@ -365,24 +310,26 @@ class UserService {
         // errorMessage: error?.message,
       };
 
-      return response;
-    } catch (error) {
-      const response = {
-        success: false,
-        status: "error",
-        statusCode: 500,
-        message: "Operation failed: sever error",
-        errorMessage: error?.message,
-      };
-
       logger.security({
-        event: "password_reset_via_mail",
+        event: "PASSWORD_RESET_REQUESTED",
         ip: req.ip,
+        email,
+        userId: user.custom_id,
         ...response,
         timestamp: new Date().toISOString(),
       });
 
       return response;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed: Service worker error",
+        500,
+        "AuthError",
+        { email: user?.email, serviceError: error?.message },
+        { ip: req.ip, event: this.event }
+      );
     }
   }
 
@@ -391,21 +338,24 @@ class UserService {
       const User = db.models.admin;
       const { password, confirmPassword, email } = data;
 
-      if (password !== confirmPassword) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 400,
-          message: "Operation failed: Passwords do not match",
-        };
+      if (!email || !password || !confirmPassword) {
+        throw new AppError(
+          "Operation failed: missing required fields",
+          400,
+          "ValidationError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
+      }
 
-        logger.security({
-          event: "password_reset_verification",
-          ip: req.ip,
-          ...response,
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+      if (password !== confirmPassword) {
+        throw new AppError(
+          "Operation failed: Passwords do not match",
+          401,
+          "ValidationError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const user = await User.findOne({
@@ -414,20 +364,13 @@ class UserService {
       });
 
       if (!user) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 404,
-          message: "Operation failed: User not found",
-        };
-
-        logger.security({
-          event: "password_reset_verification",
-          ip: req.ip,
-          ...response,
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+        throw new AppError(
+          "Operation failed: User not found",
+          404,
+          "AuthError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const secret = otpService.decryptSecret(
@@ -437,38 +380,24 @@ class UserService {
       );
 
       if (!secret) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 404,
-          message: "Operation failed: User not found",
-        };
-
-        logger.security({
-          event: "password_reset_verification",
-          ip: req.ip,
-          ...response,
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+        throw new AppError(
+          "Operation failed: invalid secret key",
+          401,
+          "AuthError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const isValid = otpService.verifyOtp(token, secret, user?.id);
       if (!isValid) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 400,
-          message: "Operation failed: Invalid or expired token",
-        };
-
-        logger.security({
-          event: "password_reset_verification",
-          ip: req.ip,
-          ...response,
-          timestamp: new Date().toISOString(),
-        });
-        return response;
+        throw new AppError(
+          "Operation failed: Invalid or expired token",
+          401,
+          "AuthError",
+          { email },
+          { ip: req.ip, event: this.event }
+        );
       }
 
       const hashedPassword = await Utilities.hashPassword(password);
@@ -486,24 +415,25 @@ class UserService {
         // errorMessage: error?.message,
       };
 
-      return response;
-    } catch (error) {
-      const response = {
-        success: false,
-        status: "error",
-        statusCode: 500,
-        message: "Operation failed: sever error",
-        errorMessage: error?.message,
-      };
-
       logger.security({
-        event: "password_reset_verification",
+        event: "PASSWORD_RESET_TOKEN_VERIFIED",
+        email,
         ip: req.ip,
         ...response,
         timestamp: new Date().toISOString(),
       });
 
       return response;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed: Service worker error",
+        500,
+        "AuthError",
+        { email, serviceError: error?.message },
+        { ip: req.ip, event: this.event }
+      );
     }
   }
 
@@ -566,21 +496,13 @@ WHERE a.custom_id = :custom_id ;
       const verifyToken = await Utilities.verifyToken(accessToken);
 
       if (!accessToken) {
-        const response = {
-          success: false,
-          status: "error",
-          statusCode: 401,
-          message: "Invalid access token",
-        };
-        logger.security({
-          event: "logout_user",
-          ip: req.ip,
-          status: "error",
-          message: "Invalid access token",
-          timestamp: new Date().toISOString(),
-        });
-
-        return response;
+        throw new AppError(
+          "Invalid access token",
+          401,
+          "AuthError",
+          {},
+          { ip: req.ip, event: this.event }
+        );
       }
       await User.update(
         { last_logout: new Date() },
@@ -598,32 +520,25 @@ WHERE a.custom_id = :custom_id ;
       };
 
       logger.security({
-        event: "logout_user",
-        ip: req.ip,
-        status: "success",
-        timestamp: new Date().toISOString(),
-      });
-
-      return response;
-    } catch (error) {
-      const response = {
-        success: false,
-        status: "error",
-        statusCode: 500,
-        message: "User logout failed due to server error",
-        errorMessage: error,
-      };
-
-      logger.security({
-        event: "logout_user",
+        event: "USER_LOGOUT",
         ip: req.ip,
         ...response,
         timestamp: new Date().toISOString(),
       });
 
       return response;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed! User logout failed due to server error",
+        500,
+        "AuthError",
+        { serviceError: error?.message },
+        { ip: req.ip, event: this.event }
+      );
     }
   }
 }
 
-module.exports = new UserService();
+module.exports = UserService;

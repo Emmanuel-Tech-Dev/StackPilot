@@ -24,6 +24,7 @@ const userRoute = require("./modules/user/user.route.js");
 // const rbacRoutes = require("./routes/rbacRoutes.js");
 const Utilities = require("./shared/helpers/functions.js");
 const logger = require("./shared/middleWare/logger.js");
+const { errorHandler } = require("./shared/middleWare/errorHandler.js");
 // const auth0 = require("./shared/dbConfig/auth0_config.js");
 // const Role = require("./model/role.js");
 // const RoleAdminPath = require("./model/RoleAdminPath.js");
@@ -92,7 +93,7 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-// app.use(auth0);
+app.use(errorHandler);
 
 async function startServer() {
   try {

@@ -426,6 +426,8 @@ const Utilities = {
   invalidateCache(key) {
     cache.del(key);
   },
+
+  asyncHandler() {},
 };
 
 module.exports = Utilities;
