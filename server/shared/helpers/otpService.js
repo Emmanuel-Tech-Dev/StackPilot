@@ -1,6 +1,7 @@
 const otp = require("otp");
 const qrcode = require("qrcode");
 const crypto = require("crypto");
+const AppError = require("./appError");
 
 class OTPService {
   constructor() {
@@ -132,7 +133,11 @@ class OTPService {
     }
   }
 
-  async generateQrCode(secret, accountName, serviceName = "YourApp") {
+  async generateQrCode(
+    secret,
+    accountName,
+    serviceName = process.env.SERVICE_NAME
+  ) {
     try {
       if (!secret || !accountName) {
         throw new Error("Secret and account name are required");
@@ -144,7 +149,7 @@ class OTPService {
         accountName
       )}?secret=${secret}&issuer=${encodeURIComponent(serviceName)}`;
 
-      const qrCodeDataUrl = await qrcode.toDataURL(otpauthUrl, {
+      const qrCodeDataUrl = qrcode.toDataURL(otpauthUrl, {
         errorCorrectionLevel: "M",
         type: "image/png",
         quality: 0.92,
@@ -187,7 +192,7 @@ class OTPService {
   decryptSecret(encryptedSecret, iv, encryptionKey) {
     try {
       if (!encryptedSecret || !iv || !encryptionKey) {
-        throw new Error("All parameters are required for decryption");
+        throw new AppError("All parameters are required for decryption");
       }
 
       const decipher = crypto.createDecipher("aes-256-cbc", encryptionKey);

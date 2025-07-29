@@ -4,6 +4,10 @@ const otpService = require("../../shared/helpers/otpService");
 const tempUtils = require("../../shared/helpers/utils");
 const AppError = require("../../shared/helpers/appError");
 const logger = require("../../shared/middleWare/logger");
+const { level } = require("winston");
+const tokenBlacklist = require("../../shared/helpers/tokenBlacklist");
+const { verify } = require("crypto");
+const sendSms = require("../../shared/helpers/smsFunction");
 
 class UserService {
   constructor(event) {
@@ -18,7 +22,8 @@ class UserService {
 
   async createUserAccount(data, req) {
     try {
-      const { password, email } = data;
+      const { password, name, email } = data;
+      // const email = data?.email?.toLowerCase();
 
       const User = db.models.admin;
       if (!email || !password) {
@@ -26,13 +31,28 @@ class UserService {
           "Operation failed! missing required fields",
           400,
           "ValidationError",
-          { ...data },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
-      const existingUser = User.findOne({
-        where: { email },
+      const existingUser = await User.findOne({
+        where: {
+          email,
+          // email: {
+          //   [db.Sequelize.Op.like]: email, // PostgreSQL    // or [db.Sequelize.Op.like]: email // MySQL
+          // },
+        },
       });
 
       if (existingUser) {
@@ -40,20 +60,36 @@ class UserService {
           "User already exist",
           409,
           "AuthError",
-          { email: data?.email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: data?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
       const hashedPassword = await Utilities.hashPassword(password);
       const cid = Utilities.generateCustomId();
 
-      const user = await User.create({
-        ...data,
-        custom_id: cid,
-        password: hashedPassword,
-        status: 1,
-      });
+      const user = await User.create(
+        {
+          name: name,
+          email,
+          custom_id: cid,
+          password: hashedPassword,
+          status: 1,
+        },
+        {
+          fields: ["custom_id", "name", "email", "password", "status"],
+        }
+      );
       const response = {
         success: true,
         status: "success",
@@ -62,11 +98,23 @@ class UserService {
         // data: user,
       };
 
-      logger.security({
-        event: "user_account_creation_success",
-        ip: req.ip,
-        ...response,
+      logger.app({
         timestamp: new Date().toISOString(),
+        event: "USER_ACCOUNT_CREATION_SUCCESSFUL",
+        statusCode: response?.statusCode,
+        type: "app",
+        message: response?.message,
+        meta: {
+          user: {
+            email: data?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
       return response;
     } catch (error) {
@@ -75,8 +123,19 @@ class UserService {
         "Operation failed!: Service Worker Error ",
         500,
         "AuthError",
-        { email: data?.email, serviceError: error },
-        { ip: req.ip, event: this.event }
+        {
+          user: {
+            email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
       );
     }
   }
@@ -91,8 +150,18 @@ class UserService {
           "Email and password fields required",
           400,
           "ValidationError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -103,8 +172,18 @@ class UserService {
           "Operation failed!: user not found",
           404,
           "AuthError",
-          { email: user?.email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -113,8 +192,18 @@ class UserService {
           "User not active. Please contact support.",
           403,
           "AuthError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -128,8 +217,18 @@ class UserService {
           "Operation failed! password mismatch",
           403,
           "AuthError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -145,13 +244,23 @@ class UserService {
         token,
       };
 
-      logger.security({
-        event: "authenticate_user",
-        ip: req.ip,
-        email,
-        userId: user.custom_id,
-        ...response,
+      logger.access({
         timestamp: new Date().toISOString(),
+        event: "USER_AUTHENTICATION_SUCCESSFUL",
+        statusCode: response?.statusCode,
+        type: "Access",
+        message: response?.message,
+        meta: {
+          user: {
+            email: data?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
 
       return response;
@@ -162,8 +271,19 @@ class UserService {
         "Authentication failed due to service worker error",
         500,
         "AuthError",
-        { email, serviceError: error.message },
-        { ip: req.ip, event: this.event }
+        {
+          user: {
+            email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
       );
     }
   }
@@ -173,7 +293,7 @@ class UserService {
       //   console.log(refreshToken);
       //   return;
       const User = db.models.admin;
-      const token = await Utilities.verifyRefereshToken(refreshToken);
+      const token = await Utilities.verifyRefreshToken(refreshToken);
 
       //   console.log(token);
       //   return;
@@ -182,8 +302,18 @@ class UserService {
           "Invalid or expired refresh token",
           400,
           "AuthError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: token?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -197,8 +327,18 @@ class UserService {
           "Operation failed! user not found",
           404,
           "AuthError",
-          { email: user?.email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -211,12 +351,23 @@ class UserService {
         token: newToken,
       };
 
-      logger.security({
-        event: "refresh_token_success",
-        ip: req.ip,
-        userId: user.id,
-        status: "success",
+      logger.access({
         timestamp: new Date().toISOString(),
+        event: "USER_TOKEN_REFRESH_SUCCESSFUL",
+        statusCode: response?.statusCode,
+        type: "Access",
+        message: response?.message,
+        meta: {
+          user: {
+            email: user?.email || undefined,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
 
       return response;
@@ -227,17 +378,22 @@ class UserService {
         "Token refresh failed due to server error",
         500,
         "AuthError",
-        { serviceError: error.message },
-        { ip: req.ip, event: this.event }
+        {
+          user: {
+            email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
       );
     }
   }
-
-  async otpLogin() {}
-
-  async verifyOtp() {}
-
-  async changePassword() {}
 
   async forgotPassword(user, req) {
     try {
@@ -250,8 +406,18 @@ class UserService {
           "Operation failed! missing required fields",
           400,
           "AuthError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -262,19 +428,29 @@ class UserService {
           "Operation failed! user not active",
           403,
           "AuthError",
-          { email: user?.email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
       const secret = otpService.generateOtpSecret();
       const resetToken = otpService.generateOtpCode(secret);
 
-      const encrypted = otpService.encryptSecret(
+      const encryptedKey = otpService.encryptSecret(
         secret,
         UserService.ENCRYPTION_KEY
       );
-      const { encryptedSecret, iv } = encrypted;
+      const { encryptedSecret, iv } = encryptedKey;
       //   console.log(encryptedSecret);
 
       //   return;
@@ -296,27 +472,48 @@ class UserService {
         throw new AppError(
           "Operation failed: error sending reset email",
           503,
-          "AuthError",
-          { email: user?.email, mailerError: err?.message },
-          { ip: req.ip, event: this.event }
+          "ValidationError",
+          {
+            user: {
+              email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+            serviceErrorMessage: err?.message,
+          },
+          { event: this.event }
         );
       }
 
       const response = {
         success: true,
         status: "success",
-        statusCode: 200,
+        statusCode: 201,
         message: "Operation successful: Password reset email sent",
         // errorMessage: error?.message,
       };
 
-      logger.security({
-        event: "PASSWORD_RESET_REQUESTED",
-        ip: req.ip,
-        email,
-        userId: user.custom_id,
-        ...response,
+      logger.access({
         timestamp: new Date().toISOString(),
+        event: "PASSWORD_RESET_REQUEST_SUCCESSFUL",
+        statusCode: response?.statusCode,
+        type: "Access",
+        message: response?.message,
+        meta: {
+          user: {
+            email: data?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
 
       return response;
@@ -327,8 +524,19 @@ class UserService {
         "Operation failed: Service worker error",
         500,
         "AuthError",
-        { email: user?.email, serviceError: error?.message },
-        { ip: req.ip, event: this.event }
+        {
+          user: {
+            email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
       );
     }
   }
@@ -343,8 +551,18 @@ class UserService {
           "Operation failed: missing required fields",
           400,
           "ValidationError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -353,8 +571,18 @@ class UserService {
           "Operation failed: Passwords do not match",
           401,
           "ValidationError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -368,8 +596,18 @@ class UserService {
           "Operation failed: User not found",
           404,
           "AuthError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -384,8 +622,18 @@ class UserService {
           "Operation failed: invalid secret key",
           401,
           "AuthError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -395,8 +643,18 @@ class UserService {
           "Operation failed: Invalid or expired token",
           401,
           "AuthError",
-          { email },
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
 
@@ -415,12 +673,23 @@ class UserService {
         // errorMessage: error?.message,
       };
 
-      logger.security({
-        event: "PASSWORD_RESET_TOKEN_VERIFIED",
-        email,
-        ip: req.ip,
-        ...response,
+      logger.access({
         timestamp: new Date().toISOString(),
+        event: "PASSWORD_RESET_TOKEN_VERIFIED",
+        statusCode: response?.statusCode,
+        type: "Access",
+        message: response?.message,
+        meta: {
+          user: {
+            email: data?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
 
       return response;
@@ -431,13 +700,118 @@ class UserService {
         "Operation failed: Service worker error",
         500,
         "AuthError",
-        { email, serviceError: error?.message },
-        { ip: req.ip, event: this.event }
+        {
+          user: {
+            email: user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
+    }
+  }
+
+  async logout(token, req) {
+    try {
+      const { accessToken, refreshToken } = token;
+      const User = db.models.admin;
+
+      const verifyToken = await Utilities.verifyToken(accessToken);
+      const refToken = await Utilities.verifyRefreshToken(refreshToken);
+
+      // console.log(verifyToken, refToken);
+      // return;
+      if (!accessToken || !verifyToken) {
+        throw new AppError(
+          "Invalid access token",
+          401,
+          "AuthError",
+          {
+            user: {
+              email: verifyToken?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
+      await User.update(
+        { last_logout: new Date() },
+        { where: { email: verifyToken?.email } }
+      );
+
+      tokenBlacklist.blacklistAccessToken(verifyToken?.jti, verifyToken);
+      tokenBlacklist.blacklistRefreshToken(refToken?.jti);
+
+      const response = {
+        success: true,
+        status: "success",
+        statusCode: 200,
+        message: "User logout successfully",
+      };
+
+      logger.access({
+        timestamp: new Date().toISOString(),
+        event: "USER_LOGOUT_SUCCESSFULL",
+        statusCode: response?.statusCode,
+        type: "Access",
+        message: response?.message,
+        meta: {
+          user: {
+            email: verifyToken?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
+      });
+
+      return response;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed! User logout failed due to server error",
+        500,
+        "AuthError",
+        {
+          user: {
+            // email: verifyToken?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
       );
     }
   }
 
   async resetAuthUserPassword() {}
+
+  async otpLogin() {}
+
+  async verifyOtp() {}
+
+  async changePassword() {}
 
   async assignRole(user, req) {
     try {
@@ -487,43 +861,124 @@ WHERE a.custom_id = :custom_id ;
   async deactivateUser() {}
 
   async deleteUser() {}
-
-  async logout(token, req) {
+  async passwordLessAuth(data, req) {
     try {
-      const { accessToken, refreshToken } = token;
+      const { email } = data;
       const User = db.models.admin;
-
-      const verifyToken = await Utilities.verifyToken(accessToken);
-
-      if (!accessToken) {
+      if (!email) {
         throw new AppError(
-          "Invalid access token",
-          401,
+          "Operation failed! missing required fields",
+          400,
           "AuthError",
-          {},
-          { ip: req.ip, event: this.event }
+          {
+            user: {
+              email: email || undefined,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
         );
       }
+
+      const user = await User.findOne({ where: { email, status: 1 } });
+
+      if (!user) {
+        throw new AppError(
+          "Operation failed! user not found",
+          404,
+          "AuthError",
+          {
+            user: {
+              email: user?.email || undefined,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
+
+      const secret = otpService.generateOtpSecret();
+      const resetToken = otpService.generateOtpCode(secret);
+
+      const encryptedKey = otpService.encryptSecret(
+        secret,
+        UserService.ENCRYPTION_KEY
+      );
+      const { encryptedSecret, iv } = encryptedKey;
+
       await User.update(
-        { last_logout: new Date() },
-        { where: { email: verifyToken?.email } }
+        { token_secret: encryptedSecret, token_iv: iv },
+        { where: { email } }
       );
 
-      const blackList = Utilities.blackList();
-      blackList.add(accessToken);
+      const html = tempUtils.otpTemplate(resetToken);
+      const subject = "One Time Password";
+
+      // Send the reset email
+      try {
+        await Utilities.sendResetLink(email, html, subject);
+        // await sendSms(
+        //   user?.id,
+        //   "+233208620668",
+        //   "Your verification code is " + resetToken
+        // );
+      } catch (err) {
+        console.error("Error sending reset email:", err.message);
+
+        throw new AppError(
+          "Operation failed: error sending reset email",
+          503,
+          "ValidationError",
+          {
+            user: {
+              email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+            serviceErrorMessage: err?.message,
+          },
+          { event: this.event }
+        );
+      }
 
       const response = {
         success: true,
         status: "success",
         statusCode: 200,
-        message: "User logout successfully",
+        message: "An email with a token has been sent to your email address!",
       };
 
-      logger.security({
-        event: "USER_LOGOUT",
-        ip: req.ip,
-        ...response,
+      logger.access({
         timestamp: new Date().toISOString(),
+        event: "PASSWORD_LESS_TOKEN_SENT_SUCCESSFUL",
+        statusCode: response?.statusCode,
+        type: "Access",
+        message: response?.message,
+        meta: {
+          user: {
+            email: data?.email || undefined,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
 
       return response;
@@ -531,11 +986,180 @@ WHERE a.custom_id = :custom_id ;
       if (error instanceof AppError) throw error;
 
       throw new AppError(
-        "Operation failed! User logout failed due to server error",
+        "Operation failed! passwordless auth failed due to server error",
         500,
         "AuthError",
-        { serviceError: error?.message },
-        { ip: req.ip, event: this.event }
+        {
+          user: {
+            email: data?.email || undefined,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
+    }
+  }
+  async verifyPasswordLessToken(data, req) {
+    try {
+      const User = db.models.admin;
+      const { token, email } = data;
+
+      if (!token || !email) {
+        throw new AppError(
+          "Operation failed: missing required fields",
+          400,
+          "ValidationError",
+          {
+            user: {
+              email: email || undefined,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
+
+      const user = await User.findOne({
+        where: { email },
+        attributes: ["id", "custom_id", "email", "token_secret", "token_iv"],
+      });
+
+      if (!user) {
+        throw new AppError(
+          "Operation failed: User not found",
+          404,
+          "AuthError",
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
+
+      const secret = otpService.decryptSecret(
+        user?.token_secret,
+        user?.token_iv,
+        UserService.ENCRYPTION_KEY
+      );
+
+      if (!secret) {
+        throw new AppError(
+          "Operation failed: invalid secret key",
+          401,
+          "AuthError",
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
+
+      const isValid = otpService.verifyOtp(token, secret, user?.id);
+      if (!isValid) {
+        throw new AppError(
+          "Operation failed: Invalid or expired token",
+          401,
+          "AuthError",
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
+
+      // await User.update(
+      //   { password: hashedPassword, token_secret: null, token_iv: null },
+      //   { where: { email } }
+      // );
+      await User.update(
+        { last_login: new Date(), token_secret: null, token_iv: null },
+        { where: { email } }
+      );
+      const tokens = Utilities.generateAuthTokens(user);
+
+      const response = {
+        success: true,
+        status: "success",
+        statusCode: 200,
+        message: "Operation successful: token verified",
+        token: tokens,
+      };
+
+      logger.access({
+        timestamp: new Date().toISOString(),
+        event: "PASSWORD_RESET_TOKEN_VERIFIED",
+        statusCode: response?.statusCode,
+        type: "Access",
+        message: response?.message,
+        meta: {
+          user: {
+            email: data?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
+      });
+
+      return response;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed: Service worker error",
+        500,
+        "AuthError",
+        {
+          user: {
+            email: user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
       );
     }
   }

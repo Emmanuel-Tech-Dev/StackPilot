@@ -1,11 +1,12 @@
 const Utilities = require("../../shared/helpers/functions");
+const tokenBlacklist = require("../../shared/helpers/tokenBlacklist");
 const UserService = require("./user.service");
 
 class UserController {
   async createUserAccount(req, res) {
     const data = req.body;
 
-    const userService = UserService.logEvent("user_account_creation_failed");
+    const userService = UserService.logEvent("USER_ACCOUNT_CREATION_FAILED");
     const response = await userService.createUserAccount(data, req);
 
     res.status(response?.statusCode).json({ ...response });
@@ -13,7 +14,7 @@ class UserController {
 
   async authenticate(req, res) {
     const data = req.body;
-    const userService = UserService.logEvent("user_authentication_failed");
+    const userService = UserService.logEvent("USER_AUTHENTICATION_FAILED");
     const response = await userService.authenticate(data, req);
 
     res.cookie("refreshToken", response?.token?.refreshToken, {
@@ -30,20 +31,41 @@ class UserController {
   async refreshAuthToken(req, res) {
     const refreshToken = req.cookies.refreshToken;
     let oldAccessToken = req.headers.authorization;
-    const blackList = Utilities.blackList();
-    // console.log(req.headers.authorization);
+
+    // console.log(oldAccessToken);
     // return;
     if (oldAccessToken && oldAccessToken.startsWith("Bearer ")) {
       oldAccessToken = oldAccessToken.slice(7).trim();
 
-      blackList.add(oldAccessToken); // Blacklist the old access token
+      const decodedToken = await Utilities.verifyToken(oldAccessToken);
+
+      tokenBlacklist.blacklistAccessToken(decodedToken?.jti, decodedToken); // Blacklist the old access token
     }
 
-    const userService = UserService.logEvent("REFRESH_TOKEN_FAILED");
+    const decodedRefreshToken = await Utilities.verifyRefreshToken(
+      refreshToken
+    );
+    if (!decodedRefreshToken) {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    if (tokenBlacklist.isRefreshTokenBlacklisted(decodedRefreshToken?.jti)) {
+      return res.status(401).json({ message: "Token already used" });
+    }
+    // console.log(
+    //   "Blacklist contents:",
+    //   blackList.getAllAcessTokens(),
+    //   blackList.getAllRefreshTokens()
+    // );
+
+    const userService = UserService.logEvent("USER_TOKEN_REFRESH_FAILED");
     const response = await userService.refreshAuthtoken(refreshToken, req);
     //   console.log("RefreshAuthToken: ", response);
     //   return;
     if (!response) return;
+
+    tokenBlacklist.blacklistRefreshToken(decodedRefreshToken?.jti);
+
     res.clearCookie("refreshToken");
 
     res.cookie("refreshToken", response?.token?.refreshToken, {
@@ -80,13 +102,39 @@ class UserController {
   async logoutUser(req, res) {
     const tokens = {
       accessToken: req.headers.authorization?.replace("Bearer ", ""),
-      // refreshToken: req.cookies.refreshToken,
+      refreshToken: req.cookies.refreshToken,
     };
 
     res.clearCookie("refreshToken");
     const userService = UserService.logEvent("USER_LOGOUT_FAILED");
     const response = await userService.logout(tokens, req);
-    res.status(response.statusCode).json(response);
+    res.status(response?.statusCode).json(response);
+  }
+
+  async passwordLessAuth(req, res) {
+    const data = req.body;
+    const userService = UserService.logEvent("PASSWORD_LESS_AUTH_FAILED");
+    const response = await userService.passwordLessAuth(data, req);
+    res.status(response?.statusCode).json(response);
+  }
+
+  async verifyPasswordLessToken(req, res) {
+    const data = req.body;
+    // const { token } = req.params;
+    const userService = UserService.logEvent("PASSWORD_LESS_AUTH_FAILED");
+    const response = await userService.verifyPasswordLessToken(
+      data,
+      // token,
+      req
+    );
+
+    res.cookie("refreshToken", response?.token?.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+      sameSite: "strict", // Strict CSRF protection
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+    res.status(response?.statusCode).json(response);
   }
 }
 

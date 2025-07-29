@@ -23,7 +23,7 @@ router
   .get(
     validateModel(db.models),
     // validateSchema()
-    authMiddleware,
+    // authMiddleware,
     // authorizeRoles,
     genericController.getAll
   )

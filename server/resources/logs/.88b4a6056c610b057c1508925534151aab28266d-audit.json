@@ -6,24 +6,9 @@
     "auditLog": "D:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\.88b4a6056c610b057c1508925534151aab28266d-audit.json",
     "files": [
         {
-            "date": 1751790749126,
-            "name": "D:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\error.log.2025-07-05",
-            "hash": "fe39a0faed691525327a9e77249b82ad85d889eb04c4ecc359d853b109bc3f63"
-        },
-        {
-            "date": 1751840020466,
-            "name": "D:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\error.log.2025-07-06",
-            "hash": "38aee2929fa778f0f832188c2c477713265ae4b0b6e33ff7b5f03bcfe132d592"
-        },
-        {
-            "date": 1751933605364,
-            "name": "D:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\error.log.2025-07-07",
-            "hash": "22265f3bae85c521b460f9e5fb6e03d571dafa22a6d1bf3e54275dda1cf45ab7"
-        },
-        {
-            "date": 1753240306759,
-            "name": "D:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\error.log.2025-07-22",
-            "hash": "8fa9c3997f388e3c80ef97c189ddc5b1120333f571ab069bd525bb67c5e84a68"
+            "date": 1753746129934,
+            "name": "D:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\error.log.2025-07-28",
+            "hash": "d10481333e5853ff5101358d5d4dab86dc51e197f7a8c1c26d3f91fb90b5217c"
         }
     ],
     "hashType": "sha256"

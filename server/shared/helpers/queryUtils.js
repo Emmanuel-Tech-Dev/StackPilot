@@ -1,5 +1,6 @@
 const { Op, Sequelize } = require("sequelize");
 const crypto = require("crypto");
+const db = require("../dbConfig/config");
 
 class QueryBuilder {
   constructor(query, association, config = {}) {
@@ -585,10 +586,20 @@ class QueryBuilder {
     return indexes;
   }
 
+  _modelHasField(model, fieldName) {
+    try {
+      return (
+        model.rawAttributes && model.rawAttributes[fieldName] !== undefined
+      );
+    } catch (error) {
+      return false;
+    }
+  }
+
   // Build the final Sequelize query options
-  build() {
+  build(model = null) {
     this.validateQuery();
-    // console.log("this.config", this.config);
+    console.log("model", model);
     const queryObj = { ...this.query };
     this.excludedKeys.forEach((key) => delete queryObj[key]);
 
@@ -596,8 +607,16 @@ class QueryBuilder {
       where: { ...this.Filters, ...this.Search },
       order: this.Sorting,
       ...this.Pagination,
-      include: this.Joins,
+      // include: this.Joins,
     };
+
+    if (this.Joins) {
+      options.include = this.Joins;
+    }
+
+    if (model && this._modelHasField(model, "password")) {
+      options.attributes = { exclude: ["password"] };
+    }
 
     if (this.Attributes) {
       options.attributes = this.Attributes;

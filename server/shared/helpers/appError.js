@@ -25,7 +25,7 @@ class AppError extends Error {
   /*
    * Automatically logs error using the shared logger
    */
-  log({ event = "unhandled_exception", ip = null, level = "auto" } = {}) {
+  log({ event = "unhandled_exception", level = "auto" } = {}) {
     // Determine log method from type if level is auto
     const typeToLoggerMap = {
       AuthError: "security",
@@ -40,14 +40,13 @@ class AppError extends Error {
       level !== "auto" ? level : typeToLoggerMap[this.type] || "error";
 
     const payload = {
+      timestamp: new Date().toISOString(),
       event,
       statusCode: this.statusCode,
       type: this.type,
       message: this.message,
       meta: this.meta,
-      stack: this.stack,
-      ip,
-      timestamp: new Date().toISOString(),
+      // stack: this.stack,
     };
 
     // Only log if logger has the method

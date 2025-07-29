@@ -18,6 +18,39 @@ const IV_LENGTH = 16;
 
 const cache = new NodeCache({ stdTTL: 3600 }); // 5 mins TTL
 const tokenBlacklistSet = new Set();
+const refreshTokenblackList = new Set();
+
+const tokenBlacklist = {
+  add(token) {
+    tokenBlacklistSet.add(token);
+    console.log("Token added to blacklist:", token); // Debug log
+    console.log("Current blacklist size:", tokenBlacklistSet.size); // Debug log
+  },
+  has(token) {
+    const isBlacklisted = tokenBlacklistSet.has(token);
+    console.log("Checking token:", token, "Is blacklisted:", isBlacklisted); // Debug log
+    return isBlacklisted;
+  },
+  remove(token) {
+    tokenBlacklistSet.delete(token);
+  },
+  addRefreshToken(token) {
+    refreshTokenblackList.add(token);
+  },
+  hasRefreshToken(token) {
+    return refreshTokenblackList.has(token);
+  },
+  removeRefreshToken(token) {
+    refreshTokenblackList.delete(token);
+  },
+  // Debug method to see all blacklisted tokens
+  getAllAcessTokens() {
+    return Array.from(tokenBlacklistSet);
+  },
+  getAllRefreshTokens() {
+    return Array.from(refreshTokenblackList);
+  },
+};
 
 const Utilities = {
   encrypt: (text) => {
@@ -49,27 +82,57 @@ const Utilities = {
   },
 
   generateToken: (payload, secret, expiresIn) => {
-    return jwt.sign(payload, secret, { expiresIn });
+    // Generate unique JTI if not provided
+    const jti = payload.jti || uuidv4();
+
+    return jwt.sign(
+      payload, // Your custom payload
+      secret,
+      {
+        expiresIn, // This sets the 'exp' claim automatically
+        // jti: jti, // This sets the 'jti' claim in JWT standard claims
+        issuer: "your-issuer", // Optional: set issuer
+        // audience: "your-users", // Optional: set audience
+      }
+    );
   },
 
   generateAuthTokens: (user) => {
-    const payload = {
+    // Generate unique JTIs for each token
+    const accessJti = uuidv4();
+    const refreshJti = uuidv4();
+
+    const basePayload = {
       id: user.id,
       custom_id: user.custom_id,
       email: user.email,
     };
 
+    // Create access token with its own JTI
+    const accessToken = Utilities.generateToken(
+      {
+        ...basePayload,
+        jti: accessJti,
+        type: "access", // Optional: identify token type
+      },
+      process.env.JWT_SECRET,
+      "15m"
+    );
+
+    // Create refresh token with its own JTI
+    const refreshToken = Utilities.generateToken(
+      {
+        ...basePayload,
+        jti: refreshJti,
+        type: "refresh", // Optional: identify token type
+      },
+      process.env.REFRESH_TOKEN_SECRET,
+      "7d"
+    );
+
     return {
-      accessToken: Utilities.generateToken(
-        payload,
-        process.env.JWT_SECRET,
-        "15m"
-      ),
-      refreshToken: Utilities.generateToken(
-        payload,
-        process.env.REFRESH_TOKEN_SECRET,
-        "7d"
-      ),
+      accessToken,
+      refreshToken,
     };
   },
 
@@ -96,41 +159,39 @@ const Utilities = {
     };
   },
 
-  verifyToken: (token) =>
-    new Promise((resolve, reject) => {
-      jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(decoded);
-        }
-      });
-    }),
+  verifyToken: async (token) => {
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // console.log("Decoded access token:", {
+      //   jti: decoded.jti,
+      //   exp: decoded.exp,
+      //   iat: decoded.iat,
+      //   expiresAt: new Date(decoded.exp * 1000).toLocaleString(),
+      // });
+      return decoded;
+    } catch (error) {
+      console.error("Access token verification failed:", error.message);
+      return null;
+    }
+  },
 
-  verifyRefereshToken: (token) =>
-    new Promise((resolve, reject) => {
-      jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (error, decoded) => {
-        if (error) {
-          reject(error);
-        } else {
-          resolve(decoded);
-        }
-      });
-    }),
+  verifyRefreshToken: async (token) => {
+    try {
+      const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+      // console.log("Decoded refresh token:", {
+      //   jti: decoded.jti,
+      //   exp: decoded.exp,
+      //   iat: decoded.iat,
+      //   expiresAt: new Date(decoded.exp * 1000).toLocaleString(),
+      // });
+      return decoded;
+    } catch (error) {
+      console.error("Refresh token verification failed:", error.message);
+      return null;
+    }
+  },
 
   blackList() {
-    const tokenBlacklist = {
-      add(token) {
-        tokenBlacklistSet.add(token);
-      },
-      has(token) {
-        return tokenBlacklistSet.has(token);
-      },
-      remove(token) {
-        tokenBlacklistSet.delete(token);
-      },
-    };
-
     return tokenBlacklist;
   },
 

@@ -3,6 +3,7 @@ const QueryBuilder = require("../../shared/helpers/queryUtils");
 // const ResponseHandler = require("../../shared/middleWare/responseHandler");
 const Utilities = require("../../shared/helpers/functions");
 const logger = require("../../shared/middleWare/logger");
+const AppError = require("../../shared/helpers/appError");
 class CrudOperation {
   static apisettings = "apisettings";
 
@@ -36,7 +37,7 @@ class CrudOperation {
       );
       // query.configSettings = getApiQueryConfig;
 
-      const options = query.build();
+      const options = query.build(this.tableModel);
 
       const start = Date.now();
 
@@ -71,6 +72,8 @@ class CrudOperation {
       };
 
       logger.query({
+        event: "QUERY_LOGS",
+        message: "Query executed successfully",
         qeuryString: this.queryString,
         filter: response?.meta?.filters,
         queryStats: response.queryStats,
@@ -78,6 +81,15 @@ class CrudOperation {
 
       return response;
     } catch (error) {
+      if (!error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed! service error",
+        500,
+        "QueryError",
+        {},
+        { ip: req.ip, event: this.event }
+      );
       const response = {
         success: false,
         message: "Operation failed!",
