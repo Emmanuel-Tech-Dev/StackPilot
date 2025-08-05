@@ -7,5 +7,5 @@ const createUserSchema = z.object({
 });
 
 module.exports = {
-  createSchema,
+  createUserSchema,
 };

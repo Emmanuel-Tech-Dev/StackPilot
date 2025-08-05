@@ -136,6 +136,13 @@ class UserController {
     });
     res.status(response?.statusCode).json(response);
   }
+
+  async changePassword(req, res) {
+    const data = req.body;
+    const userService = UserService.logEvent("PASSWORD_CHANGE_FAILED");
+    const response = await userService.changePassword(data, req);
+    res.status(response?.statusCode).json(response);
+  }
 }
 
 module.exports = new UserController();

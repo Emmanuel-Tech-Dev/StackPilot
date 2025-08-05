@@ -26,10 +26,15 @@ router.post(
   "/verify_password/:token",
   asyncHandler(userController.verifyPasswordRestToken)
 );
-router.post("/passwordless", asyncHandler(userController.passwordLessAuth));
+router.post("/otp", asyncHandler(userController.passwordLessAuth));
 router.post(
-  "/verify_token",
+  "/verify_otp",
   asyncHandler(userController.verifyPasswordLessToken)
+);
+router.post(
+  "/reset_password",
+  authMiddleware,
+  asyncHandler(userController.changePassword)
 );
 // router.use(errorHandler);
 module.exports = router;

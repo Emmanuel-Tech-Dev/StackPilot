@@ -17,11 +17,12 @@ class CrudOperation {
     this.userTableModel = config?.userTableModel;
     this.modelconfig = config?.config;
     this.sequelize = db.sequelize || db;
+    // this.req = req;
     // this.apiSettingsCache = new Map();
     // this.apisettings = "apisettings";
   }
 
-  async readService() {
+  async readService(req) {
     try {
       const SETTINGS_KEY = CrudOperation.apisettings;
       let getApiQueryConfig;
@@ -49,9 +50,6 @@ class CrudOperation {
       }
       const currentPage = Math.floor(options.offset / options.limit) + 1;
 
-      // Format the response data
-      // const formattedRows = rows.map((row) => row.get({ plain: true }));
-
       query._recordQueryStats(end - start);
       const response = {
         success: true,
@@ -72,54 +70,70 @@ class CrudOperation {
       };
 
       logger.query({
+        timestamp: new Date().toISOString(),
         event: "QUERY_LOGS",
+        statusCode: response?.statusCode,
+        type: "query",
         message: "Query executed successfully",
-        qeuryString: this.queryString,
-        filter: response?.meta?.filters,
-        queryStats: response.queryStats,
+        meta: {
+          qeuryString: this.queryString,
+          filter: response?.meta?.filters,
+          queryStats: response.queryStats,
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
 
       return response;
     } catch (error) {
-      if (!error instanceof AppError) throw error;
+      if (error instanceof AppError) throw error;
 
       throw new AppError(
-        "Operation failed! service error",
+        "Operation failed!: Service Worker Error ",
         500,
         "QueryError",
-        {},
-        { ip: req.ip, event: this.event }
+        {
+          user: {
+            email: req?.user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
       );
-      const response = {
-        success: false,
-        message: "Operation failed!",
-        errorMessage: error.message,
-        status: "error",
-        statusCode: 404,
-      };
-      logger.error({
-        ...response,
-        errorDetails: error,
-      });
-      // console.log(error);
-
-      return response;
     }
   }
 
-  async readAService() {
+  async readAService(req) {
     try {
       const record = await this.tableModel.findByPk(this.id);
       //   console.log("A single read:", record);
       if (!record) {
-        const response = {
-          message: "Data not found with this ID",
-          status: "error",
-          statusCode: 404,
-        };
-        // logger.error(response);
-        return response;
+        throw new AppError(
+          `Data not found with ID - ${this.id}`,
+          404,
+          "ValidationError",
+          {
+            item: { id: this.id },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          }
+        );
       }
+
       const response = {
         message: "Data successfully fetched",
         status: "Ok",
@@ -128,36 +142,50 @@ class CrudOperation {
       };
       return response;
     } catch (error) {
-      const response = {
-        success: false,
-        message: "Operation failed!",
-        errorMessage: error.message,
-        status: "error",
-        statusCode: 404,
-      };
-      logger.error({
-        ...response,
-        errorDetails: error,
-      });
-
-      console.log(error);
-
-      return response;
+      if (error instanceof AppError) throw error;
+      throw new AppError(
+        "Operation failed!: Service Worker Error ",
+        500,
+        "QueryError",
+        {
+          user: {
+            email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
     }
   }
 
-  async readAuthUserService() {
+  async readAuthUserService(req) {
     try {
       const user = await this.userTableModel.findByPk(this.authID);
 
       if (!user) {
-        const response = {
-          message: "User not found",
-          status: "error",
-          statusCode: 404,
-        };
-        // logger.error(response);
-        return response;
+        throw new AppError(
+          "Operation failed!: user not found",
+          404,
+          "QueryError",
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
       }
 
       const query = new QueryBuilder(
@@ -193,30 +221,52 @@ class CrudOperation {
       };
 
       logger.query({
-        qeuryString: this.queryString,
-        filter: response?.meta?.filters,
-        queryStats: response.queryStats,
+        timestamp: new Date().toISOString(),
+        event: "QUERY_LOGS",
+        statusCode: response?.statusCode,
+        type: "query",
+        message: "Query executed successfully",
+        meta: {
+          user: {
+            email: user?.email,
+          },
+          qeuryString: this.queryString,
+          filter: response?.meta?.filters,
+          queryStats: response.queryStats,
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
 
       return response;
     } catch (error) {
-      const response = {
-        success: false,
-        message: "Operation failed!",
-        errorMessage: error.message,
-        status: "error",
-        statusCode: 404,
-      };
-
-      logger.error({
-        ...response,
-        errorDetails: error,
-      });
-      return response;
+      if (error instanceof AppError) throw error;
+      throw new AppError(
+        "Operation failed!: Service Worker Error ",
+        500,
+        "QueryError",
+        {
+          user: {
+            email: req.user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
     }
   }
 
-  async createService() {
+  async createService(req) {
     let dbTransaction;
     try {
       const {
@@ -241,14 +291,24 @@ class CrudOperation {
         });
 
         if (!user) {
-          const response = {
-            message: "User not found",
-            status: "error",
-            statusCode: 404,
-          };
           if (dbTransaction) await dbTransaction.rollback();
-          // logger.error(response);
-          return response;
+          throw new AppError(
+            "Operation failed!: user not found",
+            404,
+            "AuthError",
+            {
+              user: {
+                email: user?.email,
+              },
+              request: {
+                userAgent: req.headers["user-agent"],
+                ip: req.ip,
+                method: req.method,
+                path: req.path,
+              },
+            },
+            { event: this.event }
+          );
         }
       }
 
@@ -281,11 +341,23 @@ class CrudOperation {
           if (!associatedRecord) {
             if (dbTransaction) await dbTransaction.rollback();
 
-            return {
-              message: "Related record not found",
-              status: "error",
-              statusCode: 404,
-            };
+            throw new AppError(
+              "Operation failed!: records not found",
+              404,
+              "AccessError",
+              {
+                user: {
+                  email: user?.email,
+                },
+                request: {
+                  userAgent: req.headers["user-agent"],
+                  ip: req.ip,
+                  method: req.method,
+                  path: req.path,
+                },
+              },
+              { event: this.event }
+            );
           }
 
           // Update associated record if needed
@@ -310,19 +382,25 @@ class CrudOperation {
             baseRecordData[customIdField] = associatedRecord.custom_id;
           }
         } catch (assocError) {
-          console.error("Error handling associated record:", assocError);
           if (dbTransaction) await dbTransaction.rollback();
-          const response = {
-            message: "Error handling associated record",
-            status: "error",
-            statusCode: 500,
-            serverError: assocError.message,
-          };
-          logger.error({
-            ...response,
-            errorDetails: error,
-          });
-          return response;
+          throw new AppError(
+            "Operation failed!: Service Worker Error ",
+            500,
+            "AccessError",
+            {
+              user: {
+                email: req?.user?.email,
+              },
+              request: {
+                userAgent: req.headers["user-agent"],
+                ip: req.ip,
+                method: req.method,
+                path: req.path,
+              },
+              serviceErrorMessage: assocError?.message,
+            },
+            { event: this.event }
+          );
         }
       }
 
@@ -332,38 +410,56 @@ class CrudOperation {
       if (!record) {
         if (dbTransaction) await dbTransaction.rollback(); // <-- Add this check
 
-        return {
-          message: "Data not created",
-          status: "error",
-          statusCode: 400,
-        };
+        throw new AppError(
+          "Operation failed!: Data not created",
+          404,
+          "AuthError",
+          {
+            user: {
+              email: user?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
       }
       if (dbTransaction) await dbTransaction.commit(); // <-- Add this check
       return {
         message: "Data successfully created",
         status: "Ok",
         data: record,
+        statusCode: 201,
       };
     } catch (error) {
       console.error("Error creating record:", error);
       if (dbTransaction) await dbTransaction.rollback(); // <-- Add this check
-      const response = {
-        success: false,
-        message: "Operation failed!",
-        errorMessage: error.message,
-        status: "error",
-        statusCode: 404,
-      };
-      logger.error({
-        ...response,
-        errorDetails: error,
-      });
-
-      return response;
+      throw new AppError(
+        "Operation failed!: Service Worker Error ",
+        500,
+        "AccessError",
+        {
+          user: {
+            email: req?.user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
     }
   }
 
-  async updateService() {
+  async updateService(req) {
     try {
       const user = await this.userTableModel.findOne({
         where: { custom_id: this.data.user_custom_id },
@@ -396,19 +492,24 @@ class CrudOperation {
         // statusCode: 200,
       });
     } catch (error) {
-      const response = {
-        success: false,
-        message: "Operation failed!",
-        errorMessage: error.message,
-        status: "error",
-        statusCode: 404,
-      };
-      logger.error({
-        ...response,
-        errorDetails: error,
-      });
-
-      return response;
+      throw new AppError(
+        "Operation failed!: Service Worker Error ",
+        500,
+        "AccessError",
+        {
+          user: {
+            email: req?.user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
     }
   }
   async deleteService() {
@@ -443,19 +544,24 @@ class CrudOperation {
       };
       return response;
     } catch (error) {
-      const response = {
-        success: false,
-        message: "Operation failed!",
-        errorMessage: error.message,
-        status: "error",
-        statusCode: 404,
-      };
-      logger.error({
-        ...response,
-        errorDetails: error,
-      });
-
-      return response;
+      throw new AppError(
+        "Operation failed!: Service Worker Error ",
+        500,
+        "AccessError",
+        {
+          user: {
+            email: req?.user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
     }
   }
 }

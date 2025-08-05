@@ -1,61 +1,27 @@
-const NodeCache = require("node-cache");
-const { stringify } = require("flatted");
+const CacheManager = require("../helpers/cacheManager");
+const Utilities = require("../helpers/functions");
 
-const cach = new NodeCache({ stdTTL: 300 });
-const MAX_CACHE_SIZE = 10000;
+const cacheMiddleware = (cache, ttl = 1000 * 60 * 5) => {
+  return (req, res, next) => {
+    const key = `api:${req.method}:${req.originalUrl}`;
+    console.log(key);
 
-const generateCacheKey = (req) => {
-  const url = req.originalUrl;
-  const query = JSON.stringify(req.query);
-  return `${url}${query}`;
-};
-
-const clearCacheOnModify = (req) => {
-  if (["POST", "PUT", "DELETE"].includes(req.method)) {
-    const baseUrl = req.baseUrl || req.originalUrl.split("?")[0];
-
-    const keysToDelete = cach.keys().filter((key) => key.startsWith(baseUrl));
-
-    keysToDelete.forEach((key) => cach.del(key));
-    console.log(`Cache cleared for: ${keysToDelete.join(", ")}`);
-  }
-};
-
-const cachedMiddleware = (req, res, next) => {
-  const key = generateCacheKey(req);
-
-  if (req.method === "GET") {
-    const cachedData = cach.get(key);
-    if (cachedData) {
-      const parsedData =
-        typeof cachedData === "string" ? JSON.parse(cachedData) : cachedData;
-      return res.status(200).json({ ...parsedData });
+    const cached = cache.get(key);
+    // console.log("get cached data", cached);
+    if (cached) {
+      return res.json(cached);
     }
 
-    // Modify response send to cache the data
-    const originalSend = res.send;
-    res.send = (data) => {
-      const dataSize = Buffer.byteLength(JSON.stringify(data), "utf8");
-
-      if (dataSize < MAX_CACHE_SIZE) {
-        cach.set(key, data);
-      } else {
-        console.warn(
-          `Data size too large (${dataSize} bytes) for caching. Skipping caching.`
-        );
-      }
-
-      originalSend.call(res, data);
+    const originalJson = res.json;
+    res.json = function (data) {
+      const serialized = Utilities.serializeForCache(data);
+      // console.log("set cached data", serialized);
+      cache.set(key, serialized, ttl);
+      originalJson.call(this, data);
     };
-  } else {
-    // For modifying requests, clear the cache
-    clearCacheOnModify(req);
 
-    // After clearing, optionally repopulate cache
-    // If the modified data is accessed frequently, you can reload it here
-  }
-
-  next();
+    next();
+  };
 };
 
-module.exports = cachedMiddleware;
+module.exports = cacheMiddleware;

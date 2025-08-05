@@ -488,7 +488,29 @@ const Utilities = {
     cache.del(key);
   },
 
-  asyncHandler() {},
+  serializeForCache(data) {
+    if (data === null || data === undefined) {
+      return data;
+    }
+
+    if (Array.isArray(data)) {
+      return data.map((item) => Utilities.serializeForCache(item));
+    }
+
+    if (data && typeof data.toJSON === "function" && data.dataValues) {
+      return data.toJSON();
+    }
+
+    if (data && typeof data === "object" && data.constructor === Object) {
+      const serialized = {};
+      for (const key in data) {
+        serialized[key] = Utilities.serializeForCache(data[key]);
+      }
+      return serialized;
+    }
+
+    return data;
+  },
 };
 
 module.exports = Utilities;

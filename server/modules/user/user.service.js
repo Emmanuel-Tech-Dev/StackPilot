@@ -805,62 +805,129 @@ class UserService {
     }
   }
 
-  async resetAuthUserPassword() {}
-
-  async otpLogin() {}
-
-  async verifyOtp() {}
-
-  async changePassword() {}
-
-  async assignRole(user, req) {
+  async changePassword(body, req) {
     try {
-      const { custom_id } = user;
+      const { password, new_password, confirm_password } = body;
+      const User = db.models.admin;
+      const authUser = req.user;
+      if (!password || !new_password || !confirm_password) {
+        throw new AppError(
+          "Password and confirm password fields required",
+          400,
+          "ValidationError",
+          {
+            user: {
+              // email: verifyToken?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
 
-      const res = await db.query(
-        `
-               SELECT 
-  a.custom_id,
-  a.name AS admin_name,
-  r.role_name AS role_name
-FROM admin a
-JOIN admin_user_roles aur ON a.custom_id = aur.user_id
-JOIN admin_roles r ON aur.role_id = r.role_name
-WHERE a.custom_id = :custom_id ;
-            
-            `,
-        {
-          replacements: { custom_id },
-          type: Sequelize.QueryTypes.SELECT,
-          // plain: true,
-        }
+      if (new_password !== confirm_password) {
+        throw new AppError(
+          "New password and confirm password does not match",
+          400,
+          "ValidationError",
+          {
+            user: {
+              // email: verifyToken?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
+
+      const user = await User.findOne({ where: { email: authUser?.email } });
+      if (!user) {
+        throw new AppError(
+          "Operation failed! user not found",
+          404,
+          "AuthError",
+          {
+            user: {
+              email: authUser?.email,
+            },
+            request: {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            },
+          },
+          { event: this.event }
+        );
+      }
+
+      const hashedPassword = await Utilities.hashPassword(new_password);
+      await User.update(
+        { password: hashedPassword },
+        { where: { email: authUser?.email } }
       );
 
-      console.log("from join", res);
-    } catch (error) {
       const response = {
-        success: false,
-        status: "error",
-        statusCode: 500,
-        message: "Role assigning failed due to server error",
-        errorMessage: error.message,
+        success: true,
+        status: "success",
+        statusCode: 200,
+        message: "User password changed successfully",
       };
 
-      logger.security({
-        event: "role_assigning_failed",
-        ip: req.ip,
-        ...response,
-        errorDetails: error,
+      logger.access({
         timestamp: new Date().toISOString(),
+        event: "USER_PASSWORD_CHANGE_SUCCESSFULL",
+        statusCode: response?.statusCode,
+        type: "Access",
+        message: response?.message,
+        meta: {
+          user: {
+            email: authUser?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+        },
       });
 
       return response;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed! User password change failed due to server error",
+        500,
+        "AuthError",
+        {
+          user: {
+            // email: verifyToken?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
     }
   }
 
-  async deactivateUser() {}
-
-  async deleteUser() {}
   async passwordLessAuth(data, req) {
     try {
       const { email } = data;
@@ -1163,6 +1230,57 @@ WHERE a.custom_id = :custom_id ;
       );
     }
   }
+
+  async resetAuthUserPassword() {}
+
+  async assignRole(user, req) {
+    try {
+      const { custom_id } = user;
+
+      const res = await db.query(
+        `
+               SELECT 
+  a.custom_id,
+  a.name AS admin_name,
+  r.role_name AS role_name
+FROM admin a
+JOIN admin_user_roles aur ON a.custom_id = aur.user_id
+JOIN admin_roles r ON aur.role_id = r.role_name
+WHERE a.custom_id = :custom_id ;
+            
+            `,
+        {
+          replacements: { custom_id },
+          type: Sequelize.QueryTypes.SELECT,
+          // plain: true,
+        }
+      );
+
+      console.log("from join", res);
+    } catch (error) {
+      const response = {
+        success: false,
+        status: "error",
+        statusCode: 500,
+        message: "Role assigning failed due to server error",
+        errorMessage: error.message,
+      };
+
+      logger.security({
+        event: "role_assigning_failed",
+        ip: req.ip,
+        ...response,
+        errorDetails: error,
+        timestamp: new Date().toISOString(),
+      });
+
+      return response;
+    }
+  }
+
+  async deactivateUser() {}
+
+  async deleteUser() {}
 }
 
 module.exports = UserService;

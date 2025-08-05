@@ -12,163 +12,109 @@ const uploadService = require("../../shared/uploadService.js");
 
 const genericController = {
   getAll: async (req, res) => {
-    try {
-      const queryString = req.query;
-      // const Goals = db.models.goals;
-      const model = req.model;
-      const association = {
-        // user: {
-        //   model: User,
-        //   attributes: ["name"],
-        // },
-      };
-      // /
-      // const associations = await Utilities.getDynamicAssociation(model);
+    const queryString = req.query;
+    // const Goals = db.models.goals;
+    const model = req.model;
+    const association = {
+      // user: {
+      //   model: User,
+      //   attributes: ["name"],
+      // },
+    };
+    // /
+    // const associations = await Utilities.getDynamicAssociation(model);
 
-      // const otp = new OTPService();
-      // const secret = otp.generateOtpSecret();
-      // const code =  otp.generateQrCode(secret);
+    const config = {
+      queryString,
+      tableModel: model,
+      association /*associations*/,
+    };
 
-      // console.log("otp secret :", secret);
-      // console.log("otp code :", code);
-      // console.log("otp isValid :" ,)
-
-      const config = {
-        queryString,
-        tableModel: model,
-        association /*associations*/,
-      };
-
-      // console.log(model);
-      const operation = new CrudOperation(undefined, config);
-      const results = await operation.readService();
-      return res.status(results?.statusCode).json(results);
-    } catch (error) {
-      console.log(error);
-      return handleErrorResponse(res, 500, "internal server error", "error");
-    }
+    // console.log(model);
+    const operation = new CrudOperation(undefined, config);
+    const results = await operation.readService(req);
+    res.status(results?.statusCode).json(results);
   },
 
   getOne: async (req, res) => {
-    try {
-      const { id } = req.params;
-      const model = req.model;
+    const { id } = req.params;
+    const model = req.model;
 
-      const config = { id, tableModel: model };
-      const data = new CrudOperation(undefined, config);
-      const results = await data.readAService();
-      return res.status(200).json({ ...results });
-    } catch (error) {
-      console.log(error);
-      return handleErrorResponse(res, 500, "internal server error", "error");
-    }
+    const config = { id, tableModel: model };
+    const data = new CrudOperation(undefined, config);
+    const results = await data.readAService(req);
+    res.status(results?.statusCode).json({ ...results });
   },
 
   getAllByUser: async (req, res) => {
-    try {
-      const user = req.user;
-      const model = req.model;
-      const { id } = user;
-      const User = db.models.users;
+    const user = req.user;
+    const model = req.model;
+    const { id } = user;
+    const User = db.models.users;
 
-      const config = { authID: id, tableModel: model, userTableModel: User };
+    const config = { authID: id, tableModel: model, userTableModel: User };
 
-      const operation = new CrudOperation(undefined, config);
-      const results = await operation.readAuthUserService();
-      return res.status(results?.success ? 200 : 404).json(results);
-    } catch (error) {
-      console.log(error);
-      return handleErrorResponse(res, 500, "internal server error", "error");
-    }
+    const operation = new CrudOperation(undefined, config);
+    const results = await operation.readAuthUserService(req);
+    res.status(results?.success ? 200 : 404).json(results);
   },
 
   create: async (req, res) => {
-    try {
-      const model = req.model;
-      const body = req.body;
-      const User = db.models.admin;
-      const modelConfig = await Utilities.getDynamicAssociation(model);
-      // Get model-specific configuration
-      const config = {
-        config: {
-          mainModel: model,
-          userModel: User,
-          associationConfig: modelConfig[model.name]?.associationConfig,
-          customFields:
-            modelConfig[model.name]?.associationConfig?.customIdField,
-        },
-      };
+    const model = req.model;
+    const body = req.body;
+    const User = db.models.admin;
+    const modelConfig = await Utilities.getDynamicAssociation(model);
+    // Get model-specific configuration
+    const config = {
+      config: {
+        mainModel: model,
+        userModel: User,
+        associationConfig: modelConfig[model.name]?.associationConfig,
+        customFields: modelConfig[model.name]?.associationConfig?.customIdField,
+      },
+    };
 
-      const data = new CrudOperation(body, config);
-      const result = await data.createService();
+    const data = new CrudOperation(body, config);
+    const result = await data.createService();
 
-      //   console.log(result);
-
-      if (result.status === "error") {
-        return handleErrorResponse(
-          res,
-          result.statusCode,
-          result.message,
-          result.status
-        );
-      }
-
-      return res.status(201).json({ ...result });
-    } catch (error) {
-      console.error("Create Error:", error);
-      return handleErrorResponse(res, 500, "internal server error", error);
-    }
+    //   console.log(result);
+    res.status(result?.statusCode).json({ ...result });
   },
 
   updateOne: async (req, res) => {
-    try {
-      const data = req.body;
-      const model = req.model;
-      const id = req.params.id;
-      const User = db.models.users;
-      if (!data)
-        return handleErrorResponse(
-          res,
-          404,
-          "missing required fields",
-          "error"
-        );
+    const data = req.body;
+    const model = req.model;
+    const id = req.params.id;
+    const User = db.models.users;
+    if (!data)
+      return handleErrorResponse(res, 404, "missing required fields", "error");
 
-      const dataRes = new CrudOperation(data, id, model, User);
-      const updateDate = await dataRes.updateService();
-      if (updateDate.status === "error")
-        return handleErrorResponse(
-          res,
-          updateDate.statusCode,
-          updateDate.message,
-          "error"
-        );
+    const dataRes = new CrudOperation(data, id, model, User);
+    const updateDate = await dataRes.updateService(req);
+    if (updateDate.status === "error")
+      return handleErrorResponse(
+        res,
+        updateDate.statusCode,
+        updateDate.message,
+        "error"
+      );
 
-      return res.status(200).json({ ...updateDate });
-    } catch (error) {
-      console.log(error);
-      return handleErrorResponse(res, 500, "internal server error", "error");
-    }
+    res.status(200).json({ ...updateDate });
   },
 
   deleteOne: async (req, res) => {
-    try {
-      const id = req.params.id;
-      // const user = req.user;
-      // const authID = user?.id;
-      const model = req.model;
-      const config = {
-        id: id,
-        tableModel: model,
-      };
-      const data = new CrudOperation(undefined, config);
-      const results = await data.deleteService();
-      console.log(results);
-      return res.status(results?.statusCode).json({ ...results });
-    } catch (error) {
-      console.log(error);
-      return handleErrorResponse(res, 500, "internal server error", "error");
-    }
+    const id = req.params.id;
+    // const user = req.user;
+    // const authID = user?.id;
+    const model = req.model;
+    const config = {
+      id: id,
+      tableModel: model,
+    };
+    const data = new CrudOperation(undefined, config);
+    const results = await data.deleteService();
+    console.log(results);
+    res.status(results?.statusCode).json({ ...results });
   },
 
   // async uploadSingle(req, res) {

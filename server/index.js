@@ -1,9 +1,6 @@
 const express = require("express");
 const db = require("./shared/dbConfig/config.js");
 
-// const customModels = require("./model/customModels/index.js");
-// const AdiminPath = require("./model/AdminPath.js");
-
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const rateLimiter = require("express-rate-limit");
@@ -12,22 +9,13 @@ const morgan = require("morgan");
 const csrf = require("csurf");
 const helmet = require("helmet");
 
-// const goalsRoute = require("./routes/goalsRoute.js");
-// const TwelveweekYearRoute = require("./routes/12weekYearRoute.js");
-// const weeklyRoute = require("./routes/weeklyRoute.js");
-// const dailyRoute = require("./routes/dailyRoute.js");
-// const taskRoute = require("./routes/taskRoute.js");
 const baseRoute = require("./modules/base/base.route.js");
 const uploadRoute = require("./modules/upload/upload.route.js");
 const userRoute = require("./modules/user/user.route.js");
-// const authRoute = require("./routes/authRoute.js");
-// const rbacRoutes = require("./routes/rbacRoutes.js");
 const Utilities = require("./shared/helpers/functions.js");
 const logger = require("./shared/middleWare/logger.js");
 const { errorHandler } = require("./shared/middleWare/errorHandler.js");
-// const auth0 = require("./shared/dbConfig/auth0_config.js");
-// const Role = require("./model/role.js");
-// const RoleAdminPath = require("./model/RoleAdminPath.js");
+const authMiddleware = require("./shared/middleWare/authMiddleware.js");
 
 const app = express();
 
@@ -82,6 +70,8 @@ app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   next();
 });
+
+// app.use(authMiddleware);
 app.use("/api/v1", baseRoute);
 app.use("/api/v1.0/auth", userRoute);
 app.use("/api/v2", uploadRoute);
