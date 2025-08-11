@@ -3,7 +3,7 @@ const db = require("../../shared/dbConfig/config.js");
 const genericController = require("./base.controller.js");
 
 const validateModel = require("../../shared/middleWare/validateModel.js");
-const authMiddleware = require("../../shared/middleWare/authMiddleware.js");
+const { authMiddleware } = require("../../shared/middleWare/authMiddleware.js"); //authMiddleware = require("../../shared/middleWare/authMiddleware.js");
 const cachedMiddleware = require("../../shared/middleWare/cachedMiddleWare.js");
 const { uploadSingle } = require("../../shared/dbConfig/multer.js");
 const { asyncHandler } = require("../../shared/middleWare/errorHandler.js");

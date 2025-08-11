@@ -1,2 +1,0 @@
-2025-08-05T10:44:21.633Z [ERROR] {"timestamp":"2025-08-05T10:44:21.603Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"serializeForCache is not defined","meta":{}}
-2025-08-05T10:45:18.738Z [ERROR] {"timestamp":"2025-08-05T10:45:18.735Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"utilities is not defined","meta":{}}

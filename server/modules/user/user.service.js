@@ -7,7 +7,7 @@ const logger = require("../../shared/middleWare/logger");
 const { level } = require("winston");
 const tokenBlacklist = require("../../shared/helpers/tokenBlacklist");
 const { verify } = require("crypto");
-const sendSms = require("../../shared/helpers/smsFunction");
+// const sendSms = require("../../shared/helpers/smsFunction");
 
 class UserService {
   constructor(event) {

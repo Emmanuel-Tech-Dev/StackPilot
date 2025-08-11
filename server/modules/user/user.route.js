@@ -1,10 +1,14 @@
 const express = require("express");
 const userController = require("./user.controller");
-const authMiddleware = require("../../shared/middleWare/authMiddleware");
+const { authMiddleware } = require("../../shared/middleWare/authMiddleware");
 const {
   errorHandler,
   asyncHandler,
 } = require("../../shared/middleWare/errorHandler");
+const PaymentManager = require("../../shared/helpers/paymentManager");
+const transaction = require("../tansactions/tansact.controller");
+
+const payment = new PaymentManager();
 
 const router = express.Router();
 
@@ -36,5 +40,7 @@ router.post(
   authMiddleware,
   asyncHandler(userController.changePassword)
 );
+
+router.post("/create_dva", asyncHandler(transaction.initPayment));
 // router.use(errorHandler);
 module.exports = router;

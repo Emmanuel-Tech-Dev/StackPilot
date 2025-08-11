@@ -8,16 +8,26 @@ const bodyPaser = require("body-parser");
 const morgan = require("morgan");
 const csrf = require("csurf");
 const helmet = require("helmet");
+const http = require("http");
+const socket = require("socket.io");
 
 const baseRoute = require("./modules/base/base.route.js");
 const uploadRoute = require("./modules/upload/upload.route.js");
 const userRoute = require("./modules/user/user.route.js");
+const transactionRoute = require("./modules/tansactions/transact.route.js");
+
 const Utilities = require("./shared/helpers/functions.js");
 const logger = require("./shared/middleWare/logger.js");
 const { errorHandler } = require("./shared/middleWare/errorHandler.js");
-const authMiddleware = require("./shared/middleWare/authMiddleware.js");
+const {
+  authMiddleware,
+  authenticateSocket,
+} = require("./shared/middleWare/authMiddleware.js");
+const NotificationService = require("./modules/notification/notfication.service.js");
+const socketHelper = require("./shared/helpers/socket.js");
 
 const app = express();
+// const server = http.createServer(app);
 
 const PORT = process.env.PORT || 3000;
 
@@ -28,6 +38,14 @@ const limiter = rateLimiter({
   legacyHeaders: false,
   message: "Too many requests from this IP, please try again after 15 minutes",
 });
+
+// const io = socket(server, {
+//   cors: {
+//     origin: "*",
+//     methods: ["GET", "POST"],
+//     credentials: true,
+//   },
+// });
 
 app.use(cookieParser());
 app.use(express.json());
@@ -59,6 +77,7 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     optionsSuccessStatus: 200,
   })
 );
@@ -73,8 +92,9 @@ app.use((req, res, next) => {
 
 // app.use(authMiddleware);
 app.use("/api/v1", baseRoute);
-app.use("/api/v1.0/auth", userRoute);
-app.use("/api/v2", uploadRoute);
+app.use("/api/v1/auth", userRoute);
+app.use("/api/v1/upload", uploadRoute);
+app.use("/api/v1/transaction", transactionRoute);
 
 // app.use("/api/v2/auth", userRoute);
 // app.use("/api/v2", rbacRoutes);
@@ -83,7 +103,65 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
+// app.get("/socket/health", (req, res) => {
+//   res.json({
+//     status: "OK",
+//     timestamp: new Date().toISOString(),
+//     connectedUsers: NotificationService.getConnectedUsersCount(),
+//   });
+// });
+
 app.use(errorHandler);
+
+function initializeSocket() {
+  const socketConfig = {
+    cors: {
+      origin:
+        process.env.NODE_ENV === "production"
+          ? process.env.CLIENT_URL
+          : [
+              "http://localhost:3000",
+              "http://localhost:3001",
+              "http://localhost:5173",
+            ],
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+    transports: ["websocket", "polling"],
+    pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT) || 60000,
+    pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL) || 25000,
+    upgradeTimeout: 30000,
+    httpCompression: true,
+    perMessageDeflate: {
+      threshold: 1024,
+    },
+  };
+
+  // Initialize socket helper
+  socketHelper.initialize(this.server, socketConfig);
+
+  // Add custom middlewares if needed
+  socketHelper.addCustomMiddleware((socket, next) => {
+    // Custom validation middleware
+    if (!socket.handshake.headers["user-agent"]) {
+      return next(new Error("User agent required"));
+    }
+    next();
+  });
+
+  // Add custom event handlers
+  socketHelper.addCustomEventHandler("userConnected", ({ userId }) => {
+    // Custom logic when user connects
+    this.onUserConnected(userId);
+  });
+
+  socketHelper.addCustomEventHandler("userDisconnected", ({ userId }) => {
+    // Custom logic when user disconnects
+    this.onUserDisconnected(userId);
+  });
+
+  console.log("✅ Socket.IO initialized with helper");
+}
 
 async function startServer() {
   try {
@@ -116,3 +194,4 @@ async function startServer() {
 }
 
 startServer();
+// initializeSocket();

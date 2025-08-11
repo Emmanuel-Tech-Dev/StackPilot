@@ -84,13 +84,14 @@ class CacheManager {
   cleanupDormantEntries() {
     const dormantEntries = this.getDormantEntries();
     const dormantKeys = Object.keys(dormantEntries);
+    if (dormantKeys?.length > 0) {
+      console.log(`Cleaning up ${dormantKeys.length} dormant cache entries`);
 
-    console.log(`Cleaning up ${dormantKeys.length} dormant cache entries`);
-
-    dormantKeys.forEach((key) => {
-      this.cache.delete(key);
-      this.accessTracker.delete(key);
-    });
+      dormantKeys.forEach((key) => {
+        this.cache.delete(key);
+        this.accessTracker.delete(key);
+      });
+    }
 
     return dormantKeys.length;
   }
