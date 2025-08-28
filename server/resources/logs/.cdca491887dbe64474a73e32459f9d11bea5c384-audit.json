@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\.cdca491887dbe64474a73e32459f9d11bea5c384-audit.json",
+    "files": [
+        {
+            "date": 1756392761142,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\security.log.2025-08-28",
+            "hash": "2d469dffb9213037afc2194d709175fb7ca70c30363c14ba535fad2dd87079ba"
+        }
+    ],
+    "hashType": "sha256"
+}

@@ -19,14 +19,16 @@ class PaymentManager {
   static WEBHOOK_EVENTS = {
     CHARGE_SUCCESS: "charge.success",
     TRANSFER_SUCCESS: "transfer.success",
+    REFUND_PENDING: "refund.pending",
+    REFUND_PROCESSED: "refund.processed",
+    REFUND_FAILED: "refund.failed",
   };
 
   constructor(config = {}, event) {
     this.config = this._validateAndSetConfig(config);
     this.processedRefs = new Set();
+    this.processedRefunds = new Set(); // Track processed refunds
     this.event = event;
-    // Bind methods to preserve context
-    // this._bindMethods();
   }
 
   static logEvent(event) {
@@ -66,13 +68,6 @@ class PaymentManager {
       successUrl,
       baseUrl,
     };
-  }
-
-  _bindMethods() {
-    this.createVirtualAccount = this.createVirtualAccount.bind(this);
-    this.initPayment = this.initPayment.bind(this);
-    this.verifyPayment = this.verifyPayment.bind(this);
-    this.handleWebhook = this.handleWebhook.bind(this);
   }
 
   generatePaymentReference(prefix = "GUEST") {
@@ -133,8 +128,6 @@ class PaymentManager {
       const referenceNumber = this.generatePaymentReference();
       const payload = this._buildPaymentPayload(req.body, referenceNumber);
 
-      // console.log(payload);
-      // return;
       const response = await this._makeApiRequest(
         "POST",
         "/transaction/initialize",
@@ -143,14 +136,11 @@ class PaymentManager {
 
       return this._formatPaymentResponse(response, req);
     } catch (error) {
-      // console.log(this._handlePaymentError(error, "initializing", req));
-      throw this._handlePaymentError(error, "initializing", req);
+      throw this._handlePaymentError(error, "initializing payment", req);
     }
   }
 
   _buildPaymentPayload(data, reference) {
-    // console.log("initiating payment payload ", data);
-
     return {
       amount: data.amount * 100,
       email: data.email || "emmanuelkusi345@gmail.com",
@@ -236,6 +226,95 @@ class PaymentManager {
     return paymentData;
   }
 
+  // NEW: Refund functionality
+  async initRefund(req) {
+    try {
+      this._validateRefundData(req.body);
+
+      const payload = this._buildRefundPayload(req.body);
+
+      const response = await this._makeApiRequest("POST", "/refund", payload);
+
+      return this._formatRefundResponse(response, req);
+    } catch (error) {
+      throw this._handlePaymentError(error, "initiating refund", req);
+    }
+  }
+
+  _validateRefundData(data) {
+    const errors = [];
+
+    if (!data.transaction) {
+      errors.push("Transaction ID or reference is required");
+    }
+
+    if (data.amount && data.amount <= 0) {
+      errors.push("Refund amount must be greater than 0");
+    }
+
+    if (errors.length > 0) {
+      throw new AppError(
+        `Refund validation failed: ${errors.join(", ")}`,
+        400,
+        "ValidationError"
+      );
+    }
+  }
+
+  _buildRefundPayload(data) {
+    const payload = {
+      transaction: data.transaction,
+    };
+
+    if (data.amount) {
+      payload.amount = data.amount * 100; // Convert to kobo/pesewas
+    }
+
+    if (data.customer_note) {
+      payload.customer_note = data.customer_note;
+    }
+
+    if (data.merchant_note) {
+      payload.merchant_note = data.merchant_note;
+    }
+
+    return payload;
+  }
+
+  _formatRefundResponse(response, req) {
+    logger.access({
+      timestamp: new Date().toISOString(),
+      event: "REFUND_INITIATED",
+      statusCode: 200,
+      type: "Access",
+      message: response.data.message,
+      meta: {
+        reference: response.data.transaction?.reference,
+        refundId: response.data.id,
+        amount: response.data.amount,
+        status_code: response.data.status,
+        request: {
+          userAgent: req.headers["user-agent"],
+          ip: req.ip,
+          method: req.method,
+          path: req.path,
+        },
+      },
+    });
+
+    return {
+      status: "success",
+      success: true,
+      statusCode: 200,
+      refundId: response.data.id,
+      reference: response.data.transaction?.reference,
+      amount: response.data.amount,
+      status_code: response.data.status,
+      message: response.data.message,
+      data: response.data,
+    };
+  }
+
   async _retryOperation(operation, maxRetries, delay, operationName) {
     let lastError;
 
@@ -257,8 +336,9 @@ class PaymentManager {
     throw new AppError(
       `Error ${operationName} after ${maxRetries} attempts: ${lastError.message}`,
       500,
-      "RetryError",
-      { attempts: maxRetries, lastError: lastError.message }
+      "AppError",
+      { attempts: maxRetries, lastError: lastError.message },
+      { event: this.event }
     );
   }
 
@@ -287,10 +367,9 @@ class PaymentManager {
     }
   }
 
-  async handleWebhook(req, res, onPaymentSuccess) {
+  // ENHANCED: Updated handleWebhook to support refund events
+  async handleWebhook(req, res, onPaymentSuccess, onRefundProcessed) {
     try {
-      // console.log("Received webhook:", req.body, onPaymentSuccess);
-      // return;
       const signature = req.headers["x-paystack-signature"];
       const rawBody =
         typeof req.body === "string" ? req.body : JSON.stringify(req.body);
@@ -320,7 +399,11 @@ class PaymentManager {
       const event =
         typeof req.body === "string" ? JSON.parse(req.body) : req.body;
 
-      await this._processWebhookEvent(event, onPaymentSuccess);
+      await this._processWebhookEvent(
+        event,
+        onPaymentSuccess,
+        onRefundProcessed
+      );
 
       res.status(200).json({ status: "success", message: "Webhook processed" });
     } catch (error) {
@@ -329,20 +412,44 @@ class PaymentManager {
     }
   }
 
-  async _processWebhookEvent(event, onPaymentSuccess) {
-    if (event.event !== PaymentManager.WEBHOOK_EVENTS.CHARGE_SUCCESS) {
-      console.log(`Ignoring webhook event: ${event.event}`);
+  // ENHANCED: Updated to handle both payment and refund events
+  async _processWebhookEvent(event, onPaymentSuccess, onRefundProcessed) {
+    const eventType = event.event;
+
+    // Handle payment success
+    if (eventType === PaymentManager.WEBHOOK_EVENTS.CHARGE_SUCCESS) {
+      await this._processPaymentWebhook(event, onPaymentSuccess);
       return;
     }
 
+    // Handle refund events
+    if (this._isRefundEvent(eventType)) {
+      await this._processRefundWebhook(event, onRefundProcessed);
+      return;
+    }
+
+    console.log(`Ignoring webhook event: ${eventType}`);
+  }
+
+  _isRefundEvent(eventType) {
+    return [
+      PaymentManager.WEBHOOK_EVENTS.REFUND_PENDING,
+      PaymentManager.WEBHOOK_EVENTS.REFUND_PROCESSED,
+      PaymentManager.WEBHOOK_EVENTS.REFUND_FAILED,
+    ].includes(eventType);
+  }
+
+  async _processPaymentWebhook(event, onPaymentSuccess) {
     const reference = event.data?.reference;
     if (!reference) {
-      throw new Error("No reference found in webhook data");
+      throw new Error("No reference found in payment webhook data");
     }
 
     // Prevent duplicate processing
     if (this.processedRefs.has(reference)) {
-      console.log(`Duplicate webhook ignored for reference: ${reference}`);
+      console.log(
+        `Duplicate payment webhook ignored for reference: ${reference}`
+      );
       return;
     }
 
@@ -359,6 +466,73 @@ class PaymentManager {
       );
       // Remove from processed refs to allow retry
       this.processedRefs.delete(reference);
+      throw error;
+    }
+  }
+
+  // NEW: Process refund webhook events
+  async _processRefundWebhook(event, onRefundProcessed) {
+    if (!onRefundProcessed) {
+      console.log(
+        "No refund handler provided, skipping refund webhook processing"
+      );
+      return;
+    }
+
+    const refundId = event.data?.id;
+    const transactionReference = event.data?.transaction?.reference;
+
+    if (!refundId) {
+      throw new Error("No refund ID found in refund webhook data");
+    }
+
+    // Create a unique identifier for the refund event
+    const refundEventId = `${refundId}-${event.event}`;
+
+    // Prevent duplicate processing
+    if (this.processedRefunds.has(refundEventId)) {
+      console.log(`Duplicate refund webhook ignored for refund: ${refundId}`);
+      return;
+    }
+
+    this.processedRefunds.add(refundEventId);
+
+    try {
+      // Log the refund event
+      logger.access({
+        timestamp: new Date().toISOString(),
+        event: `REFUND_WEBHOOK_${event.event.toUpperCase()}`,
+        statusCode: 200,
+        type: "Webhook",
+        message: `Refund webhook received: ${event.event}`,
+        meta: {
+          refundId,
+          transactionReference,
+          amount: event.data?.amount,
+          status: event.data?.status,
+          eventType: event.event,
+        },
+      });
+
+      // Call the refund handler with the webhook data
+      await onRefundProcessed({
+        refundId,
+        transactionReference,
+        amount: event.data?.amount,
+        status: event.data?.status,
+        eventType: event.event,
+        customerNote: event.data?.customer_note,
+        merchantNote: event.data?.merchant_note,
+        fullData: event.data,
+      });
+
+      console.log(
+        `Refund successfully processed: ${refundId} (${event.event})`
+      );
+    } catch (error) {
+      console.error(`Refund processing failed for ${refundId}:`, error.message);
+      // Remove from processed refunds to allow retry
+      this.processedRefunds.delete(refundEventId);
       throw error;
     }
   }
@@ -456,9 +630,6 @@ class PaymentManager {
       if (data && ["POST", "PUT", "PATCH"].includes(method.toUpperCase())) {
         config.data = data;
       }
-      // if (data?.amount) {
-      //   config.data.amount = data?.amount * 100;
-      // }
 
       const response = await axios(config);
 
@@ -491,13 +662,14 @@ class PaymentManager {
         paymentType: this.config.paymentType,
         operation,
         originalError: error.message,
-
-        request: {
-          userAgent: req.headers["user-agent"],
-          ip: req.ip,
-          method: req.method,
-          path: req.path,
-        },
+        request: req
+          ? {
+              userAgent: req.headers["user-agent"],
+              ip: req.ip,
+              method: req.method,
+              path: req.path,
+            }
+          : null,
       },
       { event: this.event }
     );
@@ -516,6 +688,7 @@ class PaymentManager {
 
   clearProcessedRefs() {
     this.processedRefs.clear();
+    this.processedRefunds.clear();
   }
 }
 

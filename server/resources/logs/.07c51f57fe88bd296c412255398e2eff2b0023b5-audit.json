@@ -1,0 +1,20 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 30
+    },
+    "auditLog": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\.07c51f57fe88bd296c412255398e2eff2b0023b5-audit.json",
+    "files": [
+        {
+            "date": 1756227164628,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-08-26",
+            "hash": "7c63892b3f59debc5edc42051afdb316a3d29c02cefda337179a80f8a9c661d6"
+        },
+        {
+            "date": 1756384554819,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-08-28",
+            "hash": "c785900a7bb46028a59a55183714904dd8ad79f34812ce744429421e0118f909"
+        }
+    ],
+    "hashType": "sha256"
+}

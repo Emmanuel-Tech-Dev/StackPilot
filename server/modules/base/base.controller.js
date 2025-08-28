@@ -13,6 +13,11 @@ const uploadService = require("../../shared/uploadService.js");
 const genericController = {
   getAll: async (req, res) => {
     const queryString = req.query;
+    if (!Utilities.hasAccess(req)) {
+      res.status(403).json({ message: "Access denied" });
+      return;
+    }
+
     // const Goals = db.models.goals;
     const model = req.model;
     const association = {

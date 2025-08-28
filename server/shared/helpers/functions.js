@@ -511,6 +511,17 @@ const Utilities = {
 
     return data;
   },
+  hasAccess(req) {
+    const { resources, role_id } = req.access;
+
+    const keyExact = `${req.path}:${req.method}`;
+    const keyWildcard = `${req.path}:*`;
+
+    const resource = resources.get(keyExact) || resources.get(keyWildcard);
+    console.log("from hasAccess", keyExact, keyWildcard, resource);
+
+    return !!resource && resource.role_id === role_id;
+  },
 };
 
 module.exports = Utilities;

@@ -3,11 +3,18 @@ const db = require("../../shared/dbConfig/config.js");
 const genericController = require("./base.controller.js");
 
 const validateModel = require("../../shared/middleWare/validateModel.js");
-const { authMiddleware } = require("../../shared/middleWare/authMiddleware.js"); //authMiddleware = require("../../shared/middleWare/authMiddleware.js");
+const {
+  authMiddleware,
+  getUserRole,
+  getPermission,
+  getResources,
+  getUserAccess,
+} = require("../../shared/middleWare/authMiddleware.js"); //authMiddleware = require("../../shared/middleWare/authMiddleware.js");
 const cachedMiddleware = require("../../shared/middleWare/cachedMiddleWare.js");
 const { uploadSingle } = require("../../shared/dbConfig/multer.js");
 const { asyncHandler } = require("../../shared/middleWare/errorHandler.js");
 const CacheManager = require("../../shared/helpers/cacheManager.js");
+const authorization = require("../../shared/middleWare/authorization.js");
 
 const cache = new CacheManager({
   maxItems: 1000,
@@ -17,7 +24,8 @@ const cache = new CacheManager({
 });
 const router = express.Router();
 
-// console.log("All database Model : ", db.models);
+// router.use(authMiddleware); // console.log("All database Model : ", db.models);
+// router.use(getUserAccess); // console.log("All database Model : ", db.models);
 
 router.get("/cache/analytics", (req, res) => {
   res.json(cache.getAnalytics());
@@ -39,9 +47,8 @@ router
   .route("/:resources")
   .get(
     validateModel(db.models),
-    // validateSchema()
-    // authMiddleware,
-    // authorizeRoles,
+    authMiddleware,
+    getUserAccess,
     cachedMiddleware(cache),
     asyncHandler(genericController.getAll)
   )

@@ -7,6 +7,12 @@ class TaransactionController {
     res.status(result?.statusCode).json(result);
   }
 
+  async initRefund(req, res) {
+    const payment = PaymentManager.logEvent("PAYMENT_INITIATED_FAILED");
+    const result = await payment.initRefund(req);
+    res.status(result?.statusCode).json(result);
+  }
+
   async onPaymentSuccess(paymentData) {
     console.log("Verified payment data:", {
       reference: paymentData.reference,
