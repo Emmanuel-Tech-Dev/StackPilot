@@ -44,12 +44,19 @@ router.get("/cache/cleanup", (req, res) => {
 });
 
 router
+  .route("/filter/:resources")
+  .post(
+    validateModel(db.models),
+    asyncHandler(genericController.filterOptions)
+  );
+
+router
   .route("/:resources")
   .get(
     validateModel(db.models),
-    authMiddleware,
-    getUserAccess,
-    cachedMiddleware(cache),
+    // authMiddleware,
+    // getUserAccess,
+    // cachedMiddleware(cache),
     asyncHandler(genericController.getAll)
   )
   .post(validateModel(db.models), asyncHandler(genericController.create));

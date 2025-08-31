@@ -68,6 +68,33 @@ class QueryBuilder {
     }
   }
 
+  _parseFilterValue(key, value) {
+    const sanitizedValue = this._sanitizeValue(value);
+
+    // Check if value contains commas (multiple values)
+    if (typeof sanitizedValue === "string" && sanitizedValue.includes(",")) {
+      const values = sanitizedValue
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v.length > 0);
+
+      // If we have multiple values, use IN operator
+      if (values.length > 1) {
+        // Limit to prevent query complexity
+        if (values.length > 100) {
+          throw new Error(`Too many values for ${key}. Maximum: 100`);
+        }
+        return { [Op.in]: values };
+      }
+
+      // Single value after splitting
+      return values[0] || sanitizedValue;
+    }
+
+    // Single value without commas
+    return sanitizedValue;
+  }
+
   get Filters() {
     const filters = {};
 
@@ -251,10 +278,10 @@ class QueryBuilder {
             break;
           }
         }
-
         if (!matched && !key.includes("[") && !key.includes("]")) {
           this._validateFieldName(key);
-          filters[key] = this._sanitizeValue(this.query[key]);
+          // Use the new method to handle comma-separated values
+          filters[key] = this._parseFilterValue(key, this.query[key]);
         }
       } catch (error) {
         if (this.config.enableQueryLogging) {
@@ -642,19 +669,18 @@ class QueryBuilder {
     }
 
     // Add any remaining filters from queryObj
+    const processedKeys = Object.keys(this.Filters);
     Object.entries(queryObj).forEach(([key, value]) => {
-      if (value !== undefined && value !== "" && !this._isExcludedKey(key)) {
-        try {
-          this._validateFieldName(key);
-          options.where[key] = this._sanitizeValue(value);
-        } catch (error) {
-          if (this.config.enableQueryLogging) {
-            console.warn(`Skipping invalid filter ${key}:`, error.message);
-          }
-        }
+      if (
+        value !== undefined &&
+        value !== "" &&
+        !this._isExcludedKey(key) &&
+        !processedKeys.includes(key)
+      ) {
+        // ← Add this check
+        // ...
       }
     });
-
     return options;
   }
 

@@ -1,0 +1,11 @@
+2025-08-31T11:22:34.065Z [ERROR] {"timestamp":"2025-08-31T11:22:33.996Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:22:34.135Z [ERROR] {"timestamp":"2025-08-31T11:22:34.098Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:23:14.219Z [ERROR] {"timestamp":"2025-08-31T11:23:14.219Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:23:14.225Z [ERROR] {"timestamp":"2025-08-31T11:23:14.224Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:23:55.503Z [ERROR] {"timestamp":"2025-08-31T11:23:55.502Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:23:55.508Z [ERROR] {"timestamp":"2025-08-31T11:23:55.508Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:24:28.364Z [ERROR] {"timestamp":"2025-08-31T11:24:28.364Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:24:28.379Z [ERROR] {"timestamp":"2025-08-31T11:24:28.376Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:26:44.595Z [ERROR] {"timestamp":"2025-08-31T11:26:44.582Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T11:26:44.607Z [ERROR] {"timestamp":"2025-08-31T11:26:44.606Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"path is not defined","meta":{}}
+2025-08-31T20:10:16.244Z [ERROR] {"timestamp":"2025-08-31T20:10:16.232Z","event":"unhandled_exception","statusCode":500,"type":"AppError","message":"Operation failed!: Service Worker Error ","meta":{"user":{},"request":{"userAgent":"PostmanRuntime/7.45.0","ip":"::1","method":"GET","path":"/filter/goals"},"serviceErrorMessage":"Sequelize is not defined"}}

@@ -17,6 +17,7 @@ class CrudOperation {
     this.userTableModel = config?.userTableModel;
     this.modelconfig = config?.config;
     this.sequelize = db.sequelize || db;
+    this.dataIndex = config?.dataIndex;
     // this.req = req;
     // this.apiSettingsCache = new Map();
     // this.apisettings = "apisettings";
@@ -548,6 +549,48 @@ class CrudOperation {
         "Operation failed!: Service Worker Error ",
         500,
         "AccessError",
+        {
+          user: {
+            email: req?.user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
+    }
+  }
+
+  async filterServices(req) {
+    try {
+      const rows = await this.tableModel.findAll({
+        attributes: ["id", this.dataIndex],
+        group: [this.dataIndex],
+        order: [[this.dataIndex, "ASC"]],
+      });
+
+      const response = {
+        success: true,
+        message:
+          rows.length === 0 ? "No data found" : "Data successfully fetched",
+        status: "ok",
+        statusCode: 200,
+        data: rows,
+      };
+
+      return response;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed!: Service Worker Error ",
+        500,
+        "AppError",
         {
           user: {
             email: req?.user?.email,

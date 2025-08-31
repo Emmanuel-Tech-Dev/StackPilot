@@ -12,11 +12,13 @@ const uploadService = require("../../shared/uploadService.js");
 
 const genericController = {
   getAll: async (req, res) => {
+    // console.log(req);
+    // return;
     const queryString = req.query;
-    if (!Utilities.hasAccess(req)) {
-      res.status(403).json({ message: "Access denied" });
-      return;
-    }
+    // if (!Utilities.hasAccess(req)) {
+    //   res.status(403).json({ message: "Access denied" });
+    //   return;
+    // }
 
     // const Goals = db.models.goals;
     const model = req.model;
@@ -190,6 +192,17 @@ const genericController = {
   //     });
   //   }
   // },
+
+  filterOptions: async (req, res) => {
+    const { dataIndex } = req.body;
+    const config = {
+      tableModel: req.model,
+      dataIndex,
+    };
+    const operation = new CrudOperation(undefined, config);
+    const results = await operation.filterServices(req);
+    res.status(results?.statusCode).json(results);
+  },
 };
 
 module.exports = genericController;

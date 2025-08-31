@@ -55,7 +55,7 @@ app.use(bodyPaser.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
 const allowedOrigins = [
-  "http://localhost:3000",
+  "http://localhost:3001",
   "http://localhost:5173",
   "https://my-production-app.com",
   "https://staging-app.com",
@@ -85,12 +85,33 @@ app.use(
 app.use(helmet());
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE , PATCH"
+  );
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   next();
 });
 app.get("/favicon.ico", (req, res) => res.status(204));
+// app.use(express.static("../frontend/build"));
+// const publicPath = path.resolve(__dirname, "resources/adphotos");
+// const voiceNotePath = path.resolve(__dirname, "resources/voicenotes");
+// const msgImgPath = path.resolve(__dirname, "resources/msgimages");
+// const sysImgPath = path.resolve(__dirname, "resources/sysimg");
+// const usersImgPath = path.resolve(__dirname, "resources/users");
+// const pdfsFilePath = path.resolve(__dirname, "resources/pdfs");
 
+// const staticFilesOptions = {};
+// app.get("/:pic", express.static(publicPath, staticFilesOptions));
+// app.get("/:voice", express.static(voiceNotePath, staticFilesOptions));
+// app.get("/:img", express.static(msgImgPath, staticFilesOptions));
+// app.get("/:img", express.static(sysImgPath, staticFilesOptions));
+// app.get("/:img", express.static(usersImgPath, staticFilesOptions));
+// app.get("/:pdf", express.static(pdfsFilePath, staticFilesOptions));
+
+// app.get("*", (req, res) => {
+//   res.sendFile(path.resolve("../frontend/build/index.html"));
+// });
 // app.use(authMiddleware);
 app.use("/api/v1", baseRoute);
 app.use("/api/v1/auth", userRoute);
