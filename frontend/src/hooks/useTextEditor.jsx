@@ -1,8 +1,8 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { Editor } from '@tinymce/tinymce-react';
 import $ from 'jquery';
-import Settings from '../helpers/settings';
-import utils from '../helpers/custom/react-utilities';
+import Settings from "../dependencies/helpers/settings"
+import utils from '../dependencies/helpers/utilities';
 
 export default function useTextEditor() {
     const editorRef = useRef(undefined);

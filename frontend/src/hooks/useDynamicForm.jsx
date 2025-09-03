@@ -2,8 +2,8 @@ import { MinusCircleOutlined, PlusOutlined, CloseOutlined } from '@ant-design/ic
 import { Button, Form, Input, Space, Modal, Select, Image, Radio, Checkbox, Card } from 'antd';
 import { useState, useMemo, useRef } from 'react';
 import useDraggable from './useDraggable';
-import Settings from '../helpers/settings';
-import utils from '../helpers/custom/react-utilities';
+import Settings from "../dependencies/helpers/settings"
+import utils from '../dependencies/helpers/utilities';
 
 const useDynamicForm = (formName, itemToCreate, submitBtnDetails, onFinish, showFormAddBtn = true, type = 'default') => {
     const draggable = useDraggable();

@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import ValuesStore from '../store/values-store';
-import utils from '../helpers/custom/react-utilities';
+import utils from '../dependencies/helpers/utilities';
 import { Upload, message, notification, Modal } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import Settings from '../helpers/settings';
+import Settings from "../dependencies/helpers/settings"
 import { data } from 'jquery';
 
 //this hook is based on zustand

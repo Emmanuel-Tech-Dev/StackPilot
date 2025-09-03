@@ -7,7 +7,7 @@ import html2canvas from 'html2canvas';
 
 import axios from "axios";
 
-import qs from "qs";
+// import qs from "qs";
 import Settings from "./settings";
 import moment from "moment";
 import CountUp from "react-countup";
@@ -797,6 +797,42 @@ const utils = {
             }
         }
     },
+
+    bootstrap: (valuesStore, settingsStore, fetchItems, auto = true) => {
+        if (auto) {
+            const states = settingsStore.getStates();
+            Object.keys(states)?.forEach(async (p, i) => {
+                const params = states[p];
+                if (typeof params == 'object') {
+                    let data = {
+                        critfdx: params?.critfdx,
+                        critval: params?.critval,
+                        logical: params?.logical,
+                        table: params?.table,
+                        getall: params?.getall,
+                        fields: params?.fields,
+                    };
+                    let res = await utils.requestWithReauth(params.method, params.url, null, data);
+                    valuesStore.setValue(params.storeName, res);
+                }
+            });
+        }
+        if (fetchItems) {
+            fetchItems?.forEach(async (params, i) => {
+                let data = {
+                    critfdx: params?.critfdx,
+                    critval: params?.critval,
+                    logical: params?.logical,
+                    table: params?.table,
+                    getall: params?.getall,
+                    fields: params?.fields,
+                };
+                let res = await utils.requestWithReauth(params.method, params.url, null, data);
+                valuesStore.setValue(params.storeName, res);
+            });
+        }
+    },
+
 
 
 

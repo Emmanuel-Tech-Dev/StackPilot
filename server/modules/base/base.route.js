@@ -43,6 +43,16 @@ router.get("/cache/cleanup", (req, res) => {
   res.json({ message: `Cleaned up ${cleaned} dormant entries` });
 });
 
+router.post("/bootstrap", asyncHandler(genericController.bootstrap));
+router.post(
+  "/get_browser_routes",
+  asyncHandler(genericController.getBrowserRoutes)
+);
+router.post(
+  "/get_extra_meta_options",
+  asyncHandler(genericController.getExtraMetaOptions)
+);
+
 router
   .route("/filter/:resources")
   .post(

@@ -38,7 +38,7 @@ const genericController = {
     };
 
     // console.log(model);
-    const operation = new CrudOperation(undefined, config);
+    const operation = new CrudOperation(null, config);
     const results = await operation.readService(req);
     res.status(results?.statusCode).json(results);
   },
@@ -48,7 +48,7 @@ const genericController = {
     const model = req.model;
 
     const config = { id, tableModel: model };
-    const data = new CrudOperation(undefined, config);
+    const data = new CrudOperation(null, config);
     const results = await data.readAService(req);
     res.status(results?.statusCode).json({ ...results });
   },
@@ -61,7 +61,7 @@ const genericController = {
 
     const config = { authID: id, tableModel: model, userTableModel: User };
 
-    const operation = new CrudOperation(undefined, config);
+    const operation = new CrudOperation(null, config);
     const results = await operation.readAuthUserService(req);
     res.status(results?.success ? 200 : 404).json(results);
   },
@@ -118,7 +118,7 @@ const genericController = {
       id: id,
       tableModel: model,
     };
-    const data = new CrudOperation(undefined, config);
+    const data = new CrudOperation(null, config);
     const results = await data.deleteService();
     console.log(results);
     res.status(results?.statusCode).json({ ...results });
@@ -199,9 +199,35 @@ const genericController = {
       tableModel: req.model,
       dataIndex,
     };
-    const operation = new CrudOperation(undefined, config);
+    const operation = new CrudOperation(null, config);
     const results = await operation.filterServices(req);
     res.status(results?.statusCode).json(results);
+  },
+
+  bootstrap: async (req, res) => {
+    const operation = new CrudOperation(null, null);
+    const results = await operation.bootstrap(req);
+    res.json(results);
+  },
+
+  getExtraMetaOptions: async (req, res) => {
+    const operation = new CrudOperation(null, null);
+    const results = await operation.getExtraMetaOptions(req);
+    res.json({
+      status: "Ok",
+      msg: "Operation successful",
+      details: results,
+    });
+  },
+
+  getBrowserRoutes: async (req, res) => {
+    const operation = new CrudOperation(null, null);
+    const results = await operation.getBrowserRoutes(req);
+    res.json({
+      status: "Ok",
+      msg: "Operation successful",
+      details: results,
+    });
   },
 };
 

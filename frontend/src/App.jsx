@@ -1,37 +1,37 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom';
 import useTable from './hooks/useTable'
 import Admin from './pages/Admin';
+import utils from './dependencies/helpers/utilities';
+import ValuesStore from "./store/values-store";
+import SettingsStore from "./store/settings-store";
+import useThemeConfig from './hooks/useThemeConfig';
+import { ConfigProvider } from 'antd';
+
+import { DropdownSidebarLayout, SimpleLayout, PlainSidebarLayout } from './layout/Layout';
+
+
+
+
+
+
 
 function App() {
-  // Initialize with your backend's pagination format
-  const initialParams = {
-    pagination: {
-      current: 1,        // Maps to currentPage in backend
-      pageSize: 5,       // Maps to limit in backend  
 
-    }
-  };
-
-  const table = useTable(initialParams, "v1/goals");
-
-  const columns = useMemo(() => [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
-      ...table.getColumnSearchProps("name"),
-      sorter: true,
-      filterSearch: true
-    },
-  ], []);
-
+  const settingsStore = SettingsStore();
+  const valuesStore = ValuesStore();
+  const theme = useThemeConfig()
 
 
 
   const authRoutes = {
     path: "/*",  // Define a distinct root for auth-related pages
-    element: <Outlet />,  // Use Outlet to handle nested routes
+    element: (
+      <DropdownSidebarLayout>
+        <Outlet />
+      </DropdownSidebarLayout>
+    )
+    ,  // Use Outlet to handle nested routes
     children: [
       // { index: true, element: <Navigate to="login" /> }, // Redirect to /auth/login
       // { path: "login", element: <Login /> },
@@ -81,22 +81,27 @@ function App() {
     //   ),
     // },
     // { path: "*", element: <NotFound url="/" /> },
-  ]);
+  ],
+    {
+      future: {
+        v7_startTransition: false, // Enable the v7_startTransition flag to silence the warning
+      },
+    }
+  );
 
 
 
 
   useEffect(() => {
-    console.log('Initializing table...')
-    table.setColumns(columns);
-    table.setColFilters("name", "v1/filter/goals");
-    table.setAllowSelection(true);
-  }, []); // Empty dependency - only run once
+    utils.bootstrap(valuesStore, settingsStore);
+  }, [])
+  // Include store dependencies
 
   return (
     <>
-
-      <RouterProvider router={router} />
+      <ConfigProvider theme={theme}>
+        <RouterProvider router={router} />
+      </ConfigProvider>
       {/* {table.table} */}
     </>
   )

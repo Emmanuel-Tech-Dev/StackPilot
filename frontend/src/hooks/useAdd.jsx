@@ -1,10 +1,9 @@
 
 import { useState, useMemo } from 'react';
 import ValuesStore from '../store/values-store';
-import utils from '../helpers/custom/react-utilities';
-import utils_v2 from '../helpers/utility_func';
+import utils from '../dependencies/helpers/utilities';
 import { Space, Image, Modal, Input, Select, message, Checkbox, Radio, DatePicker, TimePicker } from 'antd';
-import Settings from '../helpers/settings';
+import Settings from "../dependencies/helpers/settings"
 import useUpload from './useUpload';
 import cryptoRandomString from 'crypto-random-string';
 import useTextEditor from './useTextEditor';
@@ -44,7 +43,7 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
     async function save(url = `${Settings.baseUrl}/add`, endpoint = { tbl: tblName }, callback) {
         const v = validateShowErrorMessage();
         if (!v?.isValid) return;
-        let res = await utils_v2.requestWithReauth('post', url, endpoint, record);
+        let res = await utils.requestWithReauth('post', url, endpoint, record);
         if (res.status === 'Ok') {
             reset();
             if (callback) {
@@ -63,7 +62,7 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
         const v = validateShowErrorMessage();
         if (!v?.isValid) return;
         const data = { 'record': JSON.stringify(record), 'files': JSON.stringify(upload.base64FileList) }
-        let res = await utils_v2.requestWithReauth('post', url, endpoint, data);
+        let res = await utils.requestWithReauth('post', url, endpoint, data);
         if (res.status === 'Ok') {
             reset();
             if (callback) {
@@ -184,6 +183,8 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
     async function addForm(tableName) {
         try {
             let meta = valuesStore?.getValuesBy(tblMetaDataName, whrKeyName, tableName)?.sort((a, b) => a.rank - b.rank);
+
+
             if (fields && fields?.length) {
                 meta = meta.filter((v) => {
                     return fields.includes(v.column_name)
@@ -280,7 +281,7 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
                             } else {
                                 if (!extraMetaList.includes(name)) {//for optimization
                                     setExtraMetaList(r => [...r, name]);
-                                    const res = await utils_v2.requestWithReauth('post', `${Settings.baseUrl}/${requestTo}`, null, { sql });
+                                    const res = await utils.requestWithReauth('post', `${Settings.baseUrl}v1/${requestTo}`, null, { sql });
                                     if (groupBy) {
                                         const grouped = utils.groupBy(res.details, groupBy);
                                         let final = [];

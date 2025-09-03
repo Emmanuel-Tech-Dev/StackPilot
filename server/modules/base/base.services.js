@@ -607,6 +607,98 @@ class CrudOperation {
       );
     }
   }
+
+  async bootstrap(req) {
+    try {
+      const { table } = req.body;
+
+      const tableModel = db.models[table];
+      // console.log(req.body);
+      // return;
+      const res = await tableModel.findAll();
+
+      const response = {
+        success: true,
+        message:
+          res.length === 0 ? "No data found" : "Data successfully fetched",
+        status: "ok",
+        statusCode: 200,
+        data: res,
+      };
+
+      return res;
+    } catch (error) {
+      if (error instanceof AppError) throw error;
+
+      throw new AppError(
+        "Operation failed!: Service Worker Error ",
+        500,
+        "AppError",
+        {
+          user: {
+            email: req?.user?.email,
+          },
+          request: {
+            userAgent: req.headers["user-agent"],
+            ip: req.ip,
+            method: req.method,
+            path: req.path,
+          },
+          serviceErrorMessage: error?.message,
+        },
+        { event: this.event }
+      );
+    }
+  }
+
+  async getExtraMetaOptions(req) {
+    try {
+      const { sql } = req.body;
+
+      const res = await db.query(`${sql}`, {
+        type: db.QueryTypes.SELECT,
+        // plain: true,
+      });
+
+      // console.log(res);
+      return res;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async getBrowserRoutes(req) {
+    try {
+      const { table } = req.body;
+
+      const tableModel = db.models[table];
+      if (!req.user) {
+        const res = await tableModel.findAll({
+          where: {
+            is_public: true,
+            resource_type: "BROWSER_ROUTE",
+          },
+          exclude: ["createdAt", "updatedAt"],
+          // plain: true,
+        });
+
+        return res;
+      } else {
+        const res = await tableModel.findAll({
+          where: {
+            is_public: false,
+            resource_type: "BROWSER_ROUTE",
+          },
+          exclude: ["createdAt", "updatedAt"],
+          // plain: true,
+        });
+
+        return res;
+      }
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
 }
 
 module.exports = CrudOperation;

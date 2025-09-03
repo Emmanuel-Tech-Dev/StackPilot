@@ -93,7 +93,7 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
             onSelect: (record, selected, selectedRows, nativeEvent) => {
                 setCurrentSelectedRow({ record, selected, selectedRows, nativeEvent });
             },
-            onSelectAll: (selected, selectedRows, changeRows) => {
+            onSelectAll: (selected, selectedRows) => {
                 console.log('Select all triggered:', { selected, selectedRows });
             },
         };
