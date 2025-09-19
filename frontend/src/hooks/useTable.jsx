@@ -1,4 +1,4 @@
-import { Button, Input, Space, Table } from "antd";
+import { Button, Descriptions, Input, Space, Table } from "antd";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import utils from "../dependencies/helpers/utilities";
 import Settings from "../dependencies/helpers/settings";
@@ -6,7 +6,7 @@ import Highlighter from "react-highlight-words";
 import { SearchOutlined } from "@ant-design/icons";
 import qs from "qs";
 
-const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
+const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id", expandable = true, expandableKeys = {}) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -21,11 +21,11 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
     const searchInput = useRef(null);
 
     // Initialize table parameters with proper defaults
-    const [tableParams, setTableParams] = useState({
+    const [tableParams, setTableParams] = useState(() => ({
         pagination: {
             current: 1,
             pageSize: 10,
-            showSizeChanger: false, // Ensure dropdown remains disabled
+            showSizeChanger: false,
             showQuickJumper: false,
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
             ...initTblParams?.pagination
@@ -33,41 +33,36 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
         filters: initTblParams?.filters || {},
         sorter: initTblParams?.sorter || {},
         ...initTblParams
-    });
+    }));
 
-
-
-    const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    const handleSearch = useCallback((selectedKeys, confirm, dataIndex) => {
         confirm();
         setSearchText(selectedKeys[0]);
         setSearchedColumn(dataIndex);
-    };
+    }, []);
 
-    const handleReset = (clearFilters) => {
+    const handleReset = useCallback((clearFilters) => {
         clearFilters();
         setSearchText("");
-    };
+    }, []);
 
     const getQueryParams = useCallback((params) => {
         const queryParams = {
-            page: params.pagination?.current || 1,  // Map to your backend format
+            page: params.pagination?.current || 1,
             limit: params.pagination?.pageSize || 10,
         };
-
 
         if (params.filters) {
             Object.keys(params.filters).forEach(key => {
                 if (params.filters[key]) {
-                    // Handle array filters for dropdowns (e.g., name=[1, 2])
                     queryParams[key] = Array.isArray(params.filters[key])
-                        ? params.filters[key].join(',') // Convert array to comma-separated string
+                        ? params.filters[key].join(',')
                         : params.filters[key];
                 }
             });
         }
 
-        // Add sorting if it exists
-        if (params.sorter && params.sorter.field) {
+        if (params.sorter?.field) {
             queryParams.sortBy = params.sorter.field;
             queryParams.sortOrder = params.sorter.order === 'ascend' ? 'asc' : 'desc';
         }
@@ -76,7 +71,7 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
     }, []);
 
     const rowSelectionConfig = useMemo(() => {
-        if (!allowSelection) return;
+        if (!allowSelection) return null; // Changed from undefined to null
 
         return {
             type: selectionType,
@@ -104,9 +99,9 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
             ...prev,
             pagination: {
                 ...prev.pagination,
-                current: pagination.current, // Use correct Ant Design property
+                current: pagination.current,
                 pageSize: pagination.pageSize,
-                showSizeChanger: false, // Ensure dropdown remains disabled
+                showSizeChanger: false,
                 showQuickJumper: false,
                 showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
             },
@@ -115,16 +110,17 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
         }));
     }, []);
 
-    const setColFilters = useCallback(async (dataIndex, url) => {
+    const setColFilters = useCallback(async (dataIndex, url,) => {
         try {
             const res = await utils.requestWithReauth('post', `${Settings.baseUrl}${url}`, undefined, { dataIndex });
 
-            // Fix: Ensure each filter option has a unique key
             const filters = res?.data?.map((item, index) => ({
-                text: item?.name,
-                value: item?.name,
-                key: item?.id || `${item?.name}-${index}` // Fallback to index if id is missing
+                text: item?.[dataIndex],
+                value: item?.[dataIndex],
+                key: item?.id || `${item?.[dataIndex]}-${index}`
             })) || [];
+
+
 
             setColumns((prevColumns) =>
                 prevColumns.map((col) =>
@@ -143,13 +139,14 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
     }, []);
 
     const fetchData = useCallback(async () => {
+        if (!endpoint) return;
+
         setLoading(true);
+        setError(''); // Clear previous errors
+
         try {
             const queryParams = getQueryParams(tableParams);
             const queryString = qs.stringify(queryParams);
-
-
-
             const res = await utils.requestWithReauth('get', `${Settings.baseUrl}${endpoint}?${queryString}`);
 
             setData(res?.data || []);
@@ -160,38 +157,34 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
                     ...prev,
                     pagination: {
                         ...prev.pagination,
-                        total: res?.meta?.pagination.totalItems || prev.pagination.total,
-                        current: res?.meta?.pagination.currentPage || prev.pagination.current,
-                        pageSize: res?.meta?.pagination.limit || prev.pagination.pageSize,
-                        showSizeChanger: false, // Ensure dropdown remains disabled
+                        total: res.meta.pagination.totalItems || 0,
+                        current: res.meta.pagination.currentPage || prev.pagination.current,
+                        pageSize: res.meta.pagination.limit || prev.pagination.pageSize,
+                        showSizeChanger: false,
                         showQuickJumper: false,
                         showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
                     }
                 }));
             } else {
-                console.warn('Pagination data missing in response:', res);
+                // console.warn('Pagination data missing in response:', res);
             }
-
-            setError('');
         } catch (error) {
-            console.log('Fetch error:', error);
-            setError(error.message || 'An error occurred');
+            console.error('Fetch error:', error);
+            setError(error.message || 'An error occurred while fetching data');
+            setData([]); // Clear data on error
         } finally {
             setLoading(false);
         }
-    }, [endpoint, tableParams, getQueryParams]);
+    }, [endpoint, getQueryParams, tableParams]);
 
+    // Optimized useEffect - avoid JSON.stringify
+    const tableParamsString = useMemo(() =>
+        JSON.stringify(tableParams), [tableParams]
+    );
 
     useEffect(() => {
         fetchData();
-    }, [
-        JSON.stringify(tableParams)
-    ]);
-
-    // Initial data fetch only
-    // useEffect(() => {
-    //     fetchData();
-    // }, [endpoint]); // Only re-fetch if endpoint changes
+    }, [tableParamsString]); // Use memoized string
 
     const refreshData = useCallback(() => {
         fetchData();
@@ -268,10 +261,8 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
             />
         ),
         onFilter: (value, record) => {
-            return record[dataIndex]
-                ?.toString()
-                ?.toLowerCase()
-                ?.includes(value.toLowerCase());
+            const fieldValue = record[dataIndex];
+            return fieldValue?.toString()?.toLowerCase()?.includes(value.toLowerCase()) || false;
         },
         onFilterDropdownOpenChange: (visible) => {
             if (visible) {
@@ -292,7 +283,7 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
             ) : (
                 text
             ),
-    }), [searchText, searchedColumn]);
+    }), [searchText, searchedColumn, handleSearch, handleReset]);
 
     const table = useMemo(() => (
         <Table
@@ -302,7 +293,58 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
             dataSource={data}
             loading={loading}
             size="small"
-            pagination={tableParams?.pagination}
+            pagination={tableParams.pagination}
+            onChange={handleTableChange}
+        />
+    ), [rowSelectionConfig, columns, data, loading, tableParams.pagination, handleTableChange, rowKey]);
+
+
+    const tableExpandable = useMemo(() => (
+        <Table
+            rowSelection={rowSelectionConfig}
+            columns={columns}
+            rowKey={(record) => record[rowKey] || record.id || record.key}
+            dataSource={data}
+            expandable={expandable && {
+                expandedRowRender: (record) => {
+                    let parsed = null;
+                    // console.log(record?.level)
+                    try {
+                        // raw looks like: "timestamp [HTTP] {JSON}"
+                        const jsonPart = record.raw.split(`[${record?.level}]`)[1]?.trim();
+                        if (jsonPart) {
+                            parsed = JSON.parse(jsonPart);
+                            // console.log(parsed);
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse raw log JSON:", e);
+                    }
+
+                    return (
+                        <Descriptions bordered size="small" title="More Details">
+                            <Descriptions.Item label="Type">{record.type}</Descriptions.Item>
+                            <Descriptions.Item label="Filename">{record.filename}</Descriptions.Item>
+                            <Descriptions.Item label="Line Number">{record.lineNumber}</Descriptions.Item>
+                            <Descriptions.Item label="Raw">
+
+                                {record.raw}
+
+                            </Descriptions.Item>
+                            {parsed?.meta && (
+                                <Descriptions.Item label="Meta">
+
+                                    {JSON.stringify(parsed.meta, null, 2)}
+
+                                </Descriptions.Item>
+                            )}
+                        </Descriptions>
+                    );
+                }
+                ,
+            }}
+            loading={loading}
+            size="small"
+            pagination={tableParams.pagination}
             onChange={handleTableChange}
         />
     ), [rowSelectionConfig, columns, data, loading, tableParams.pagination, handleTableChange, rowKey]);
@@ -310,7 +352,7 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
     const tableWithHeader = useCallback((header, extraProps = {}) => {
         return (
             <Table
-                rowSelection={allowSelection ? rowSelectionConfig : undefined}
+                rowSelection={allowSelection ? rowSelectionConfig : null}
                 columns={columns}
                 rowKey={(record) => record[rowKey] || record.id || record.key || `${record.name}-${record.index}`}
                 dataSource={data}
@@ -335,7 +377,7 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
     const tableWithFooter = useCallback((footer, extraProps = {}) => {
         return (
             <Table
-                rowSelection={allowSelection ? rowSelectionConfig : undefined}
+                rowSelection={allowSelection ? rowSelectionConfig : null}
                 columns={columns}
                 rowKey={(record) => record[rowKey] || record.id || record.key}
                 dataSource={data}
@@ -357,7 +399,7 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
         );
     }, [allowSelection, rowSelectionConfig, columns, data, loading, tableParams.pagination, handleTableChange, rowKey]);
 
-    // Enable single selection
+    // Selection management functions
     const enableSingleSelection = useCallback(() => {
         setSelectionType("radio");
         setAllowSelection(true);
@@ -365,13 +407,11 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
         setSelectedRows([]);
     }, []);
 
-    // Enable multiple selection
     const enableMultipleSelection = useCallback(() => {
         setSelectionType("checkbox");
         setAllowSelection(true);
     }, []);
 
-    // Disable selection
     const disableSelection = useCallback(() => {
         setAllowSelection(false);
         setSelectedRowKeys([]);
@@ -379,7 +419,6 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
         setCurrentSelectedRow({});
     }, []);
 
-    // Clear selection
     const clearSelection = useCallback(() => {
         setSelectedRowKeys([]);
         setSelectedRows([]);
@@ -407,6 +446,7 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
         setSelectedRowKeys,
         loading,
         error,
+        setError, // Added for external error management
         tableParams,
         setTableParams,
         enableSingleSelection,
@@ -414,7 +454,8 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id") => {
         disableSelection,
         clearSelection,
         getColumnSearchProps,
-        setColFilters
+        setColFilters,
+        tableExpandable
     };
 };
 

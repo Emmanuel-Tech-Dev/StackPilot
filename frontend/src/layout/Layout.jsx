@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import {
     DashboardOutlined,
@@ -13,6 +13,7 @@ import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     AppstoreOutlined,
+    BellFilled,
 } from "@ant-design/icons";
 import {
     Avatar,
@@ -32,54 +33,6 @@ const { Header, Sider, Content, Footer } = Layout;
 const { Text } = Typography;
 
 
-
-const fetchMainMenuItems = async () => {
-    return [
-        { key: "/dashboard", label: "Dashboard", hasDropdown: false },
-        { key: "/reports", label: "Reports", hasDropdown: true },
-        { key: "/settings", label: "Settings", hasDropdown: true },
-    ];
-};
-
-const fetchSubMenuItems = async (parentKey) => {
-    if (parentKey === "/reports") {
-        return [
-            { key: "/reports/daily", label: "Daily Report" },
-            { key: "/reports/monthly", label: "Monthly Report" },
-        ];
-    }
-    if (parentKey === "/settings") {
-        return [
-            { key: "/settings/profile", label: "Profile Settings" },
-            { key: "/settings/system", label: "System Settings" },
-        ];
-    }
-    return [];
-};
-
-/**
- * Recursive menu renderer
- */
-const renderMenuItems = (items, navigate) =>
-    items?.map((item) => {
-        if (item?.has_dropdown) {
-            return {
-                key: item.resource_name,
-                label: item?.resource_name,
-                icon: <AppstoreOutlined />,
-                children: item.children?.length
-                    ? renderMenuItems(item.children, navigate)
-                    : [], // caret still shows
-            };
-        }
-        return {
-            key: item.resource_name,
-            label: item?.resource_name,
-            icon: <AppstoreOutlined />,
-            onClick: () => navigate(item.resource_path),
-
-        };
-    });
 // ==============================================
 // 1. PLAIN SIDEBAR NAVIGATION LAYOUT
 // ==============================================
@@ -235,7 +188,7 @@ export const DropdownSidebarLayout = ({ children }) => {
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
     const [menuItems, setMenuItems] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // const [loading, setLoading] = useState(true);
     const [openKeys, setOpenKeys] = useState([]);
     const {
         token: { colorBgContainer },
@@ -273,7 +226,7 @@ export const DropdownSidebarLayout = ({ children }) => {
             let res = await utils.requestWithReauth('post', `${Settings.baseUrl}v1/get_browser_routes`, null, { table: "admin_resources" });
 
             if (!res?.details) return;
-            valuesStore.setValue("routes", res)
+            valuesStore.setValue("routes", res?.details)
             const normalizedItems = res?.details.map((item) =>
                 item.has_dropdown ? { ...item, children: [] } : item
             );
@@ -291,33 +244,50 @@ export const DropdownSidebarLayout = ({ children }) => {
     }, []);
 
 
-    // Handle submenu expand (lazy load)
-    const handleOpenChange = async (keys) => {
+    const handleOpenChange = useCallback(async (keys) => {
+        // setLoading(true);
         setOpenKeys(keys);
-        const latestKey = keys.find(
-            (key) =>
-                menuItems.find((item) => item.key === key && item.hasDropdown)?.children
-                    ?.length === 0
-        );
+
+        // Get the latest opened key (last item in the array)
+        const latestKey = keys[keys.length - 1];
 
         if (latestKey) {
-            try {
-                const subItems = await fetchSubMenuItems(latestKey);
-                setMenuItems((prevItems) =>
-                    prevItems.map((prevItem) =>
-                        prevItem.key === latestKey
-                            ? { ...prevItem, children: subItems }
-                            : prevItem
-                    )
-                );
-            } catch (error) {
-                console.error(`Failed to fetch submenu for ${latestKey}:`, error);
+            // Check if this menu item has dropdown and hasn't been loaded yet
+            const menuItem = menuItems.find(item => item.resource_name === latestKey);
+
+            // Only fetch if it's a dropdown item and children haven't been loaded
+            if (menuItem && menuItem.has_dropdown && (!menuItem.children || menuItem.children.length === 0)) {
+                try {
+                    const subItems = await utils.requestWithReauth(
+                        "post",
+                        `${Settings.baseUrl}v1/get_sub_routes`,
+                        null,
+                        {
+                            table: "sub_resources",
+                            parent_id: latestKey
+                        }
+                    );
+                    valuesStore.setValue("sub_routes", subItems?.details)
+                    setMenuItems((prevItems) =>
+                        prevItems.map((prevItem) =>
+                            prevItem.resource_name === latestKey
+                                ? { ...prevItem, children: subItems?.details }
+                                : prevItem
+                        )
+                    );
+
+                    // setLoading(false);
+                } catch (error) {
+                    console.error(`Failed to fetch submenu for ${latestKey}:`, error);
+                    // setLoading(false);
+                }
             }
         }
-    };
+    }, [menuItems]); // Dependencies: menuItems
+
 
     // Rendered menu
-    const renderedMenuItems = useMemo(() => (renderMenuItems(menuItems, navigate)), [menuItems])
+    const renderedMenuItems = useMemo(() => (utils.renderMenuItems(menuItems, "resource_name", navigate)), [menuItems])
 
     return (
         <Layout className="min-h-screen flex">
@@ -367,7 +337,7 @@ export const DropdownSidebarLayout = ({ children }) => {
                 <Header
                     style={{
                         background: colorBgContainer,
-                        padding: "10px 20px",
+                        padding: "10px 10px",
                         borderBottom: "1px solid #f0f0f0",
                         position: "sticky",
                         top: 0,
@@ -385,13 +355,15 @@ export const DropdownSidebarLayout = ({ children }) => {
                                 className="text-lg"
                             />
                             <h1 className="text-lg font-medium text-gray-700 m-0">
-                                Dropdown Sidebar Layout
+                                StackPilot CMS
                             </h1>
                         </div>
 
                         <div className="flex items-center gap-4">
                             <Badge count={3}>
-                                <Button className="!-p-5" type="text" icon={<BellOutlined />} />
+                                {/* <Button className="!-p-5" type="text"> */}
+                                <BellFilled />
+                                {/* </Button> */}
                             </Badge>
 
                             <Dropdown
@@ -420,9 +392,9 @@ export const DropdownSidebarLayout = ({ children }) => {
 
                 <Content
                     style={{
-                        margin: "24px",
-                        padding: "24px",
-                        background: colorBgContainer,
+                        margin: "24px 0",
+                        padding: "14px",
+                        // background: colorBgContainer,
                         minHeight: "calc(100vh - 112px)",
                     }}
                 >
@@ -431,7 +403,7 @@ export const DropdownSidebarLayout = ({ children }) => {
                 </Content>
 
                 <Footer style={{ textAlign: "center", background: "#fafafa" }}>
-                    CMS with Dropdowns © {new Date().getFullYear()}
+                    StackPilot © {new Date().getFullYear()}
                 </Footer>
             </Layout>
         </Layout>
@@ -444,7 +416,7 @@ export const DropdownSidebarLayout = ({ children }) => {
 export const TopNavLayout = ({ children }) => {
     const navigate = useNavigate();
     const location = useLocation();
-    const { token: { colorBgContainer } } = theme.useToken();
+    // const { token: { colorBgContainer } } = theme.useToken();
 
     const user = { name: "Admin", email: "admin@example.com" };
 

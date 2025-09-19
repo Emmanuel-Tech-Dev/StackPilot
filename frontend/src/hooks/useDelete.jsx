@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 // import ValuesStore from '../store/values-store';
-import utils from '../helpers/utility_func';
-import Settings from '../helpers/settings';
+import utils from '../dependencies/helpers/utilities';
+import Settings from '../dependencies/helpers/settings';
 import { Popconfirm, message } from 'antd';
 //this hook is based on zustand
 const useDelete = (/*tablesMetaData, whereKeyName*/) => {
@@ -19,9 +19,9 @@ const useDelete = (/*tablesMetaData, whereKeyName*/) => {
         setSaveCompleted(false);
     };
 
-    const deleteRecord = async (url = `${Settings.baseUrl}/delete`, data, endpoint, callback) => {
+    const deleteRecord = async (url = `${Settings.baseUrl}v1/delete`, data, endpoint, callback) => {
         setSaveCompleted(false);
-        let res = await utils.requestWithReauth('post', url, endpoint, data);
+        let res = await utils.requestWithReauth('post', url, null, { data, tablemodel: endpoint });
         if (res.status === 'Ok') {
             setSaveCompleted(true);
             if (callback) {
@@ -37,10 +37,10 @@ const useDelete = (/*tablesMetaData, whereKeyName*/) => {
     };
 
 
-    function confirm(url, data, title, endpoint, elem = <a href="#">Delete</a>, okText = 'Yes', cancelText = 'No', okButtonProps = { style: { background: Settings.secondaryColorHex, border: 'none' } }, callback) {
+    function confirm(url, data, title, endpoint, elem = <a href="#">Delete</a>, okText = 'Yes', cancelText = 'No', okButtonProps = { style: { background: "red", border: 'none' } }, callback) {
         return <Popconfirm
             title={title}
-            onConfirm={e => deleteRecord(url, data, endpoint, callback)}
+            onConfirm={() => deleteRecord(url, data, endpoint, callback)}
             onCancel={cancel}
             okText={okText}
             cancelText={cancelText}

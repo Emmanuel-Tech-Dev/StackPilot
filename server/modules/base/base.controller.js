@@ -40,6 +40,7 @@ const genericController = {
     // console.log(model);
     const operation = new CrudOperation(null, config);
     const results = await operation.readService(req);
+
     res.status(results?.statusCode).json(results);
   },
 
@@ -92,11 +93,17 @@ const genericController = {
     const data = req.body;
     const model = req.model;
     const id = req.params.id;
-    const User = db.models.users;
+    const User = db.models.admin;
+    const config = {
+      id: id,
+      tableModel: model,
+      userTableModel: User,
+    };
+
     if (!data)
       return handleErrorResponse(res, 404, "missing required fields", "error");
 
-    const dataRes = new CrudOperation(data, id, model, User);
+    const dataRes = new CrudOperation(data, config);
     const updateDate = await dataRes.updateService(req);
     if (updateDate.status === "error")
       return handleErrorResponse(
@@ -228,6 +235,57 @@ const genericController = {
       msg: "Operation successful",
       details: results,
     });
+  },
+
+  getSubRoutes: async (req, res) => {
+    const operation = new CrudOperation(null, null);
+    const results = await operation.getSubResources(req);
+    res.json({
+      status: "Ok",
+      msg: "Operation successful",
+      details: results,
+    });
+  },
+
+  addData: async (req, res) => {
+    try {
+      console.log(req.body);
+      const { record, tablemodel } = req.body;
+      const { tbl } = tablemodel;
+      const model = db.models[tbl];
+      console.log(record, tablemodel, model);
+
+      res.status(200).json({
+        status: "Ok",
+        msg: "Operation successful",
+        // details: response,
+      });
+    } catch (error) {
+      res.status(500).json({ status: "Error", msg: error.message });
+    }
+  },
+
+  deleteData: async (req, res) => {
+    try {
+      console.log(req.body);
+      const { data, tablemodel } = req.body;
+      const { tableName } = tablemodel;
+      const model = db.models[tableName];
+      console.log(model);
+      await model.destroy({
+        where: { id: data?.id },
+      });
+      res.status(200).json({
+        status: "Ok",
+        msg: "Operation successful",
+        // details: response,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "Error",
+        msg: error.message,
+      });
+    }
   },
 };
 

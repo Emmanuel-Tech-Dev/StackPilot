@@ -25,6 +25,7 @@ class CrudOperation {
 
   async readService(req) {
     try {
+     
       const SETTINGS_KEY = CrudOperation.apisettings;
       let getApiQueryConfig;
 
@@ -462,8 +463,9 @@ class CrudOperation {
 
   async updateService(req) {
     try {
+      console.log(req.body, this.data, this.userTableModel);
       const user = await this.userTableModel.findOne({
-        where: { custom_id: this.data.user_custom_id },
+        where: { custom_id: this.data?.user_custom_id },
         attribuites: ["id", "custom_id"],
       });
       if (!user) {
@@ -476,7 +478,7 @@ class CrudOperation {
       const updatedRecord = await this.tableModel.update(
         { ...this.data },
         {
-          where: { id: this.id, user_custom_id: user.custom_id },
+          where: { id: this.id },
         }
       );
 
@@ -678,7 +680,8 @@ class CrudOperation {
             is_public: true,
             resource_type: "BROWSER_ROUTE",
           },
-          exclude: ["createdAt", "updatedAt"],
+          order: [["order", "DESC"]],
+          // exclude: ["createdAt", "updatedAt"],
           // plain: true,
         });
 
@@ -689,7 +692,43 @@ class CrudOperation {
             is_public: false,
             resource_type: "BROWSER_ROUTE",
           },
-          exclude: ["createdAt", "updatedAt"],
+          order: [["order", "DESC"]],
+          // exclude: ["createdAt", "updatedAt"],
+          // plain: true,
+        });
+
+        return res;
+      }
+    } catch (error) {
+      throw new Error(error);
+    }
+  }
+
+  async getSubResources(req) {
+    try {
+      const { table, parent_id } = req.body;
+
+      const tableModel = db.models[table];
+      if (!req.user) {
+        const res = await tableModel.findAll({
+          where: {
+            is_public: true,
+            resources_cid: parent_id,
+          },
+          order: [["orders", "DESC"]],
+          // exclude: ["createdAt", "updatedAt"],
+          // plain: true,
+        });
+
+        return res;
+      } else {
+        const res = await tableModel.findAll({
+          where: {
+            is_public: false,
+            resources_cid: parent_id,
+          },
+          order: [["orders", "DESC"]],
+          // exclude: ["createdAt", "updatedAt"],
           // plain: true,
         });
 

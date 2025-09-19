@@ -22,9 +22,6 @@ class AppError extends Error {
     this.log(logOptions);
   }
 
-  /*
-   * Automatically logs error using the shared logger
-   */
   log({ event = "unhandled_exception", level = "auto" } = {}) {
     // Determine log method from type if level is auto
     const typeToLoggerMap = {

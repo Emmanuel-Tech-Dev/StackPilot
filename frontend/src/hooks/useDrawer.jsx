@@ -21,7 +21,7 @@ const useDrawer = () => {
     const onClose = () => setOpen(false)
 
 
-    const drawerJSX = (handlOnClose, localzIndex, localContent) => {
+    const drawerJSX = (localzIndex, localContent) => {
         return <>
             <Drawer
                 width={width}
@@ -29,7 +29,7 @@ const useDrawer = () => {
                 title={title}
                 placement={placement}
                 closable={closable}
-                onClose={handlOnClose}
+                onClose={onClose}
                 open={open}
                 key={placement}
                 zIndex={localzIndex || zIndex}

@@ -45,7 +45,7 @@ const ensureTransport = (type) => {
       datePattern: "YYYY-MM-DD",
       zippedArchive: true,
       maxSize: "10m",
-      maxFiles: "30d",
+      maxFiles: "10d",
       level: config.level,
       format: logFormat,
     });

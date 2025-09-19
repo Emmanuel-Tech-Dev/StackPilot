@@ -1,6 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-
+import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -8,6 +8,11 @@ export default defineConfig({
       include: "**/*.{jsx,tsx}", // Ensure JSX/TSX files are processed
     }),
   ],
+  resolve: {
+    alias: {
+      "@": "/src",
+    },
+  },
   server: {
     proxy: {
       "/api": {

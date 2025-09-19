@@ -12,7 +12,7 @@ const Admin = () => {
     //     ThemeConfig.notifyThemeChange();
     //     ThemeConfig.getCurrentTheme(true)
     // }
-    const table = useTable({ pagination: { current: 1, pageSize: 5 } }, "v1/goals");
+    const table = useTable({ pagination: { current: 1, pageSize: 5 } }, "v1/goals", { manuel: true });
     const addData = useAdd("tables_metadata", 'table_name')
 
     const columns = useMemo(() => [

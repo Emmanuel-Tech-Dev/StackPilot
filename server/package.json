@@ -32,6 +32,7 @@
     "paystack": "^2.0.1",
     "qrcode": "^1.5.4",
     "request-ip": "^3.3.0",
+    "response-time": "^2.3.4",
     "sequelize": "^6.37.4",
     "socket.io": "^4.8.1",
     "twilio": "^5.3.5",

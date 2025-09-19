@@ -48,10 +48,14 @@ router.post(
   "/get_browser_routes",
   asyncHandler(genericController.getBrowserRoutes)
 );
+router.post("/get_sub_routes", asyncHandler(genericController.getSubRoutes));
 router.post(
   "/get_extra_meta_options",
   asyncHandler(genericController.getExtraMetaOptions)
 );
+
+router.post("/add", genericController.addData);
+router.post("/delete", genericController.deleteData);
 
 router
   .route("/filter/:resources")

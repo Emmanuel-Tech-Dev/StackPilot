@@ -1,5 +1,5 @@
-import { Input, Button, Space, message } from "antd";
-import { SearchOutlined } from "@ant-design/icons";
+import { Input, Button, Space, message, notification } from "antd";
+import { AppstoreOutlined, DashboardOutlined, SearchOutlined } from "@ant-design/icons";
 import Highlighter from "react-highlight-words";
 import { saveAs } from 'file-saver'
 import jsPDF from 'jspdf';
@@ -14,9 +14,9 @@ import CountUp from "react-countup";
 // import { set } from "lodash";
 // import { legacyLogicalPropertiesTransformer } from "@ant-design/cssinjs";
 
+import dayjs from "dayjs";
 
 const utils = {
-
 
 
 
@@ -801,7 +801,7 @@ const utils = {
     bootstrap: (valuesStore, settingsStore, fetchItems, auto = true) => {
         if (auto) {
             const states = settingsStore.getStates();
-            Object.keys(states)?.forEach(async (p, i) => {
+            Object.keys(states)?.forEach(async (p,) => {
                 const params = states[p];
                 if (typeof params == 'object') {
                     let data = {
@@ -833,9 +833,110 @@ const utils = {
         }
     },
 
+    DynamicIcon: ({ iconClass, size = "16px", className = "" }) => {
+        return (
+            <i
+                className={`${iconClass} ${className}`}
+                style={{
+                    fontSize: size,
+                    minWidth: size,
+                    textAlign: 'center',
+                    display: 'inline-block'
+                }}
+            />
+        );
+    },
 
 
+    renderMenuItems: (items, key, navigate) =>
+        items?.map((item) => {
+            // const navigate = useNavigate();
+            const icon = item?.icon
+            if (item?.has_dropdown) {
 
+                return {
+                    key: item?.[key],
+                    label: item?.[key],
+                    icon: <utils.DynamicIcon iconClass={icon} size="12px" />,
+                    children: item.children?.length
+                        ? utils.renderMenuItems(item?.children, key, navigate)
+                        : [], // caret still shows
+                };
+            }
+
+            return {
+                key: item?.resource_name,
+                label: item?.resource_name,
+                icon: < utils.DynamicIcon iconClass={icon} size="12px" />,
+                onClick: () => navigate(item?.resource_path),
+
+            };
+        }),
+
+    sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    groupBy: function (xs, key) {
+        return xs?.reduce(function (rv, x) {
+            (rv[x[key]] = rv[x[key]] || []).push(x);
+            return rv;
+        }, {});
+    },
+
+    showNotification(
+        msg = "Attention",
+        description,
+        type = "text-red-500",
+        placement = "bottomRight",
+        config = {}
+    ) {
+        notification.open({
+            message: (
+                <label className={`font-bolder ${type}`}>
+                    <i className="fas fa-exclamation-circle"></i> {msg}
+                </label>
+            ),
+            description: description,
+            placement: placement,
+            ...config,
+        });
+    },
+    formatDateV2(date, delimeter = '-', joiner = '-') {
+        const d = date?.split(delimeter);
+        const rev = d?.reverse();
+        return rev?.join(joiner);
+    },
+    formatDate(date, joiner = '-') {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+
+        if (month.length < 2)
+            month = '0' + month;
+        if (day.length < 2)
+            day = '0' + day;
+
+        return [year, month, day].join(joiner);
+    },
+    formatDateV3(date, format = 'dddd, MMMM D, YYYY') {
+        const d = dayjs(date);
+        return d?.format(format);
+    },
+
+    formatBytes: (bytes) => {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+
+
+    formatUptime: (seconds) => {
+        const days = Math.floor(seconds / (3600 * 24));
+        const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        return `${days}d ${hours}h ${minutes}m`;
+    },
 }
 
 

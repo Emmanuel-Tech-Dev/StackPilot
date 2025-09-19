@@ -40,10 +40,12 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
 
 
 
-    async function save(url = `${Settings.baseUrl}/add`, endpoint = { tbl: tblName }, callback) {
+    async function save(url = `${Settings.baseUrl}v1/add`, tablemodel = { tbl: tblName }, callback) {
+        console.log(url, tablemodel, record)
         const v = validateShowErrorMessage();
         if (!v?.isValid) return;
-        let res = await utils.requestWithReauth('post', url, endpoint, record);
+        let res = await utils.requestWithReauth('post', url, null, { record: record, tablemodel });
+        console.log(res, record)
         if (res.status === 'Ok') {
             reset();
             if (callback) {
@@ -58,11 +60,11 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
         }
     }
 
-    async function saveWithFiles(url = `${Settings.baseUrl}/add_with_files`, endpoint = { tbl: tblName }, callback) {
+    async function saveWithFiles(url = `${Settings.baseUrl}/add_with_files`, tablemodel = { tbl: tblName }, callback) {
         const v = validateShowErrorMessage();
         if (!v?.isValid) return;
         const data = { 'record': JSON.stringify(record), 'files': JSON.stringify(upload.base64FileList) }
-        let res = await utils.requestWithReauth('post', url, endpoint, data);
+        let res = await utils.requestWithReauth('post', url, tablemodel, data);
         if (res.status === 'Ok') {
             reset();
             if (callback) {
@@ -267,9 +269,9 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
                         const value = p?.value;
                         const image = p?.image;
                         const groupBy = p?.groupBy;
-                        const endpoint = p?.endpoint;
+                        const tablemodel = p?.tablemodel;
                         const endpointResKey = p?.endpoint_result_key;
-                        const requestTo = endpoint ? endpoint : 'get_extra_meta_options';
+                        const requestTo = tablemodel ? tablemodel : 'get_extra_meta_options';
 
                         for (let placeholder in sqlPlaceHolders) {
                             sql = sql.replace(placeholder, sqlPlaceHolders[placeholder]);
@@ -627,7 +629,7 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
             const groupBy = p?.groupBy;
             if (sql) {
                 sql = sql.replace('this.value', v);
-                const res = await utils_v2.requestWithReauth('post', `${Settings.baseUrl}/get_extra_meta_options`, null, { sql });
+                const res = await utils.requestWithReauth('post', `${Settings.baseUrl}/get_extra_meta_options`, null, { sql });
                 if (groupBy) {
                     const grouped = utils.groupBy(res.details, groupBy);
                     let final = [];
