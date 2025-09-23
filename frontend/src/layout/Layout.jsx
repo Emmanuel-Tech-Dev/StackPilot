@@ -25,7 +25,7 @@ import {
     Typography,
     theme
 } from "antd";
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import ValuesStore from "../store/values-store"
 import utils from '../dependencies/helpers/utilities';
 import Settings from '../dependencies/helpers/settings';
@@ -241,7 +241,7 @@ export const DropdownSidebarLayout = ({ children }) => {
 
     useEffect(() => {
         fetchRoute()
-    }, []);
+    }, [window.location.hash, valuesStore["settings"]]);
 
 
     const handleOpenChange = useCallback(async (keys) => {
@@ -267,7 +267,7 @@ export const DropdownSidebarLayout = ({ children }) => {
                             parent_id: latestKey
                         }
                     );
-                    valuesStore.setValue("sub_routes", subItems?.details)
+                    // valuesStore.setValue("sub_routes", subItems?.details)
                     setMenuItems((prevItems) =>
                         prevItems.map((prevItem) =>
                             prevItem.resource_name === latestKey
@@ -398,7 +398,7 @@ export const DropdownSidebarLayout = ({ children }) => {
                         minHeight: "calc(100vh - 112px)",
                     }}
                 >
-                    {children}
+                    <Outlet />
                     {/* {loading ? <div>Loading...</div> : children} */}
                 </Content>
 
@@ -607,11 +607,11 @@ export const SimpleLayout = ({ children }) => {
 // LAYOUT COMPONENT PROP TYPES
 // ==============================================
 const layoutPropTypes = {
-    children: PropTypes.node.isRequired,
+    children: PropTypes.node,
 };
 
 PlainSidebarLayout.propTypes = layoutPropTypes;
-DropdownSidebarLayout.propTypes = layoutPropTypes;
+// DropdownSidebarLayout.propTypes = layoutPropTypes;
 TopNavLayout.propTypes = layoutPropTypes;
 SimpleLayout.propTypes = layoutPropTypes;
 // ==============================================

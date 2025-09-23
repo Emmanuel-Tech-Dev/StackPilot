@@ -1,0 +1,1 @@
+2025-09-23T13:16:20.915Z [ERROR] {"timestamp":"2025-09-23T13:16:20.889Z","event":"unhandled_exception","statusCode":500,"type":"InternalError","message":"Cannot read properties of undefined (reading 'status')","meta":{}}

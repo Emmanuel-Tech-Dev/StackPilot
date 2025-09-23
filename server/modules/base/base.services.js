@@ -25,7 +25,6 @@ class CrudOperation {
 
   async readService(req) {
     try {
-     
       const SETTINGS_KEY = CrudOperation.apisettings;
       let getApiQueryConfig;
 
@@ -463,38 +462,49 @@ class CrudOperation {
 
   async updateService(req) {
     try {
-      console.log(req.body, this.data, this.userTableModel);
-      const user = await this.userTableModel.findOne({
-        where: { custom_id: this.data?.user_custom_id },
-        attribuites: ["id", "custom_id"],
-      });
-      if (!user) {
-        return (data = {
-          message: "User not found",
-          status: "error",
-          statusCode: 404,
-        });
-      }
+      console.log(
+        "Data from base services ",
+        req.body
+        // this.data?.data
+        // this.userTableModel,
+        // this.tableModel
+      );
+      const record = req.body;
+      // return;
+      // const user = await this.userTableModel.findOne({
+      //   where: { custom_id: this.data?.user_custom_id },
+      //   attribuites: ["id", "custom_id"],
+      // });
+      // if (!user) {
+      //   return (data = {
+      //     message: "User not found",
+      //     status: "error",
+      //     statusCode: 404,
+      //   });
+      // }
       const updatedRecord = await this.tableModel.update(
-        { ...this.data },
+        { ...record },
         {
           where: { id: this.id },
         }
       );
 
       if (!updatedRecord) {
-        return (data = {
-          message: "Data not updated",
-          status: "error",
-          statusCode: 400,
-        });
+           const res = {
+             message: "Data not updated",
+             status: "Error",
+             statusCode: 400,
+           }
+        return res;
       }
-      return (data = {
+      return  {
         message: "Data successfully updated",
         status: "Ok",
-        // statusCode: 200,
-      });
+        // data: updatedRecord,
+        statusCode: 200,
+      }
     } catch (error) {
+      console.error("Error updating record:", error);
       throw new AppError(
         "Operation failed!: Service Worker Error ",
         500,

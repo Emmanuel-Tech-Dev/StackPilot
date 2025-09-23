@@ -67,7 +67,7 @@ const Login = () => {
 
                         <div>
                             <Link
-                                to="/password-reset-link"
+                                to="/reset_password"
                                 className="text-blue-500 font-semibold text-xs flex justify-end items-end"
                             >
                                 Forgot password?
@@ -80,7 +80,7 @@ const Login = () => {
                         </Form.Item>
                     </Form>
 
-                    <Button block className="mt-3" variant="outline" href="/otp-request">
+                    <Button block className="mt-3" variant="outline" href="/otp_request">
                         LogIn with OTP
                     </Button>
 

@@ -46,7 +46,7 @@ const SystemSettings = () => {
 
                     ]}
                 />
-                <Button className='' href='/admin/manage/user_roles'>Manage Access</Button>
+                <Button className='' href='/admin/management/roles'>Manage Access</Button>
             </div>
 
             <Card

@@ -160,7 +160,7 @@ const LogsOverview = () => {
                             healthDrawer.setWidth(500)
                         }}
                     >Check Health Status</Button>
-                    <Button href="/settings/system_logs/report">Log Reports</Button>
+                    <Button href="system_logs/report">Log Reports</Button>
 
                 </Space>
 

@@ -25,7 +25,7 @@ const {
   authMiddleware,
   authenticateSocket,
 } = require("./shared/middleWare/authMiddleware.js");
-const NotificationService = require("./modules/notification/notfication.service.js");
+
 const socketHelper = require("./shared/helpers/socket.js");
 
 const app = express();
@@ -35,7 +35,7 @@ const PORT = process.env.PORT || 3000;
 
 const limiter = rateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 500,
   standardHeaders: true,
   legacyHeaders: false,
   message: "Too many requests from this IP, please try again after 15 minutes",
@@ -63,10 +63,10 @@ const allowedOrigins = [
   "https://staging-app.com",
 ];
 
-app.use((err, req, res, next) => {
-  logger.error(err.message);
-  res.status(err.status || 500).json({ error: err.message });
-});
+// app.use((err, req, res, next) => {
+//   logger.error(err.message);
+//   res.status(err.status || 500).json({ error: err.message });
+// });
 
 app.use(
   cors({
@@ -84,16 +84,16 @@ app.use(
   })
 );
 
+// app.use((req, res, next) => {
+//   res.setHeader("Access-Control-Allow-Origin", "*");
+//   res.setHeader(
+//     "Access-Control-Allow-Methods",
+//     "GET, POST, PUT, DELETE , PATCH"
+//   );
+//   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+//   next();
+// });
 app.use(helmet());
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE , PATCH"
-  );
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  next();
-});
 app.get("/favicon.ico", (req, res) => res.status(204));
 // app.use(express.static("../frontend/build"));
 // const publicPath = path.resolve(__dirname, "resources/adphotos");
@@ -115,6 +115,12 @@ app.get("/favicon.ico", (req, res) => res.status(204));
 //   res.sendFile(path.resolve("../frontend/build/index.html"));
 // });
 // app.use(authMiddleware);
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 app.use("/api/v1", baseRoute);
 app.use("/api/v1/auth", userRoute);
 app.use("/api/v1/upload", uploadRoute);

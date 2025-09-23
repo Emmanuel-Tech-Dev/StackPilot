@@ -2,7 +2,7 @@ import { LockOutlined, RestTwoTone, RollbackOutlined, UserOutlined } from '@ant-
 import { Button, Form, Input, message } from 'antd';
 import React, { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import utils from '../../../helpers/utility_func';
+import utils from '../../dependencies/helpers/utilities';
 
 const VerifyResetToken = () => {
 
@@ -44,7 +44,7 @@ const VerifyResetToken = () => {
 
                 <div className="md:max-w-md mx-auto md:p-12 p-6 bg-[#f5f5f5] rounded">
                     <div className='flex justify-end'>
-                        <Button icon={<RollbackOutlined />} href="/password-reset-link" />
+                        <Button icon={<RollbackOutlined />} href="/reset_password" />
 
                     </div>
                     <div className='mt-5'>
@@ -104,9 +104,9 @@ const VerifyResetToken = () => {
                         </Form.Item>
                     </Form>
 
-                    <Button block className="mt-3" variant="outline" href="/otp-request">
+                    {/* <Button block className="mt-3" variant="outline" href="/otp-request">
                         LogIn with OTP
-                    </Button>
+                    </Button> */}
 
                     <div className="mt-5 text-center text-sm">
                         <p>Don't have an account? <Link to="/sign-up" className="text-blue-500 font-semibold">Sign up</Link></p>

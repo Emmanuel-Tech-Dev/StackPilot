@@ -6,6 +6,8 @@ import useDrawer from '../../hooks/useDrawer';
 import utils from '../../dependencies/helpers/utilities';
 import Settings from '../../dependencies/helpers/settings';
 import useDelete from '../../hooks/useDelete';
+import useEdit from '../../hooks/useEdit';
+import ValuesStore from '../../store/values-store';
 
 
 const Roles = () => {
@@ -15,8 +17,10 @@ const Roles = () => {
     //     ThemeConfig.notifyThemeChange();
     //     ThemeConfig.getCurrentTheme(true)
     // }
+    const valuesStore = ValuesStore()
     const table = useTable({ pagination: { current: 1, pageSize: 10 } }, "v1/admin_roles", null);
     const addData = useAdd("tables_metadata", 'table_name')
+    const edit = useEdit("tables_metadata", "table_name")
     const deleteRole = useDelete()
     const profileDrawer = useDrawer()
 
@@ -36,6 +40,12 @@ const Roles = () => {
 
         },
         {
+            title: "System Role",
+            dataIndex: "is_system_role",
+            key: "is_system_role",
+            render: (text, record) => text ? <Tag color='green'>Yes</Tag> : <Tag color='red'>No</Tag>
+        },
+        {
             title: "Action",
             dataIndex: 'action',
             key: 'action',
@@ -47,11 +57,7 @@ const Roles = () => {
                             // className='border-blue-400'
                             variant='filled'
                             icon={<i className="fas fa-edit text-[12px] text-blue-500"></i>}
-                            onClick={() => {
-                                profileDrawer.setOpen(true)
-                                profileDrawer.setPlacement("right")
-                                profileDrawer.setWidth(500)
-                            }}
+                            onClick={() => editRecord(record, 'admin_roles')}
                         />
 
                         {deleteRole.confirm(
@@ -70,6 +76,15 @@ const Roles = () => {
         }
     ], []);
 
+    function editRecord(record, tableName) {
+        const storeKey = 'editableRecord';
+        valuesStore.setValue(storeKey, record);
+        edit.setTblName(tableName);
+        edit.setData(record);
+        edit.setRecordKey(storeKey);
+        edit.setShowModal(true);
+        edit.setSaveCompleted(false);
+    }
 
 
 
@@ -82,6 +97,26 @@ const Roles = () => {
     async function addOnOk() {
         let res = await addData.save(`${Settings.baseUrl}v1/add`, { tbl: 'admin_roles' })
         table.refreshData()
+    }
+
+    async function editOnOk() {
+        const data = edit.record
+
+        const res = await utils.requestWithReauth('put', `${Settings.baseUrl}v1/admin_roles/${data?.id}`, null, {
+            // table_name: 'admin_roles',
+            data
+
+        })
+
+        if (res?.status === "Ok") {
+            utils.showNotification("Success", res?.msg, "text-green-500")
+            edit.setShowModal(false)
+            edit.resetCompletely()
+            table.refreshData()
+
+        }
+        // console.log(res, data)
+
     }
 
 
@@ -113,6 +148,7 @@ const Roles = () => {
 
             </div>
             {addData.addModal("Add New Role", addOnOk)}
+            {edit.editModal("Edit Role", editOnOk)}
             {profileDrawer.drawerJSX()}
         </>
 

@@ -17,7 +17,6 @@ const UserManagementLayout = () => {
 
     return (
         <Layout style={{ minHeight: "100%" }}>
-            {/* Horizontal Menu */}
             <Header style={{ background: "#fff", padding: 0 }}>
                 <Menu
                     mode="horizontal"
@@ -26,35 +25,35 @@ const UserManagementLayout = () => {
                     onClick={({ key }) => navigate(key)}
                     items={[
                         {
-                            key: "/user_management/users",
+                            key: "/admin/management/users",
                             icon: <UserOutlined />,
                             label: "Users",
                         },
                         {
-                            key: "/user_management/roles",
+                            key: "/admin/management/roles",
                             icon: <TeamOutlined />,
                             label: "Roles",
                         },
                         {
-                            key: "/user_management/resources",
+                            key: "/admin/management/resources",
                             icon: <SettingOutlined />,
                             label: "Resources",
                         },
                         {
-                            key: "/user_management/permissions3",
+                            key: "/admin/management/permission",
                             icon: <KeyOutlined />,
                             label: "Permissions",
                             children: [
                                 {
-                                    key: "/user_management/permissions",
+                                    key: "/admin/management/permissions",
                                     label: "Permissions",
                                 },
                                 {
-                                    key: "/user_management/permissions_roles",
+                                    key: "/admin/management/permissions_roles",
                                     label: "Roles & Permissions",
                                 },
                                 {
-                                    key: "/user_management/permissions_resources",
+                                    key: "/admin/management/permissions_resources",
                                     label: "Permissions Resources",
                                 },
                             ],
@@ -62,8 +61,6 @@ const UserManagementLayout = () => {
                     ]}
                 />
             </Header>
-
-            {/* Page Content */}
             <Content style={{ padding: "16px" }}>
                 <Outlet />
             </Content>

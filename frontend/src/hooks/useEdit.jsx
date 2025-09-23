@@ -1,9 +1,9 @@
 
 import { useState, useMemo } from 'react';
 import ValuesStore from '../store/values-store';
-import Settings from '../helpers/settings';
-import utils_v2 from '../helpers/utility_func';
-import utils from '../helpers/custom/react-utilities';
+import Settings from '../dependencies/helpers/settings';
+
+import utils from '../dependencies/helpers/utilities';
 import { Space, Image, Modal, Input, Select, message, DatePicker, TimePicker, Radio, Checkbox } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -42,7 +42,7 @@ const useEdit = (tablesMetaData, whereKeyName) => {
     async function saveRaw(key = undefined, url = `${Settings.backend}/edit`, tableName = tblName, endpoint = null, callback) {
         removeNonEditableFields(key || recordKey, tableName);
         let data = valuesStore.getValue(key || recordKey);
-        let res = await utils_v2.requestWithReauth('post', url, endpoint, data);
+        let res = await utils.requestWithReauth('post', url, endpoint, data);
         if (res.status === 'Ok') {
             reset(key);
             if (callback) {
@@ -68,7 +68,7 @@ const useEdit = (tablesMetaData, whereKeyName) => {
         for (let key of localSelectedKeysToEdit || selectedKeysToEdit) {
             b[key] = data[key];
         }
-        let res = await utils_v2.requestWithReauth('post', url, endpoint, b);
+        let res = await utils.requestWithReauth('post', url, endpoint, b);
         if (res.status === 'Ok') {
             reset(key);
             if (callback) {
@@ -87,7 +87,7 @@ const useEdit = (tablesMetaData, whereKeyName) => {
         removeNonEditableFields(key || recordKey, tableName);
         let data = valuesStore.getValue(key || recordKey);
         let b = removeUnknownFields(tableName, data);
-        let res = await utils_v2.requestWithReauth('put', url, endpoint, b);
+        let res = await utils.requestWithReauth('put', url, endpoint, b);
 
         if (res.status === 'Ok') {
             reset(key);
@@ -108,7 +108,7 @@ const useEdit = (tablesMetaData, whereKeyName) => {
         let d = valuesStore.getValue(key || recordKey);
         let b = removeUnknownFields(tableName, d);
         const data = { 'record': JSON.stringify(b), 'files': JSON.stringify(upload.fileList) }
-        let res = await utils_v2.requestWithReauth('post', url, endpoint, data);
+        let res = await utils.requestWithReauth('post', url, endpoint, data);
         if (res.status === 'Ok') {
             reset(key);
             message.success('Record has been updated succesfully');
@@ -340,7 +340,7 @@ const useEdit = (tablesMetaData, whereKeyName) => {
                                     } else {
                                         if (!extraMetaList.includes(name)) {
                                             setExtraMetaList(r => [...r, name]);
-                                            const res = await utils_v2.requestWithReauth('post', `${Settings.baseUrl}/${requestTo}`, null, { sql });
+                                            const res = await utils.requestWithReauth('post', `${Settings.baseUrl}/${requestTo}`, null, { sql });
                                             if (groupBy) {
                                                 const grouped = utils.groupBy(res.details, groupBy);
                                                 let final = [];
@@ -644,7 +644,7 @@ const useEdit = (tablesMetaData, whereKeyName) => {
             const groupBy = p?.groupBy;
             if (sql) {
                 sql = sql.replace('this.value', v);
-                const res = await utils_v2.requestWithReauth('post', `${Settings.baseUrl}/get_extra_meta_options`, null, { sql });
+                const res = await utils.requestWithReauth('post', `${Settings.baseUrl}/get_extra_meta_options`, null, { sql });
                 if (groupBy) {
                     const grouped = utils.groupBy(res.details, groupBy);
                     let final = [];

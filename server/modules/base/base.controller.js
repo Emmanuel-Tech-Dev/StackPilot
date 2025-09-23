@@ -100,12 +100,17 @@ const genericController = {
       userTableModel: User,
     };
 
+    // console.log(config, data);
+    // return;
+
     if (!data)
       return handleErrorResponse(res, 404, "missing required fields", "error");
 
     const dataRes = new CrudOperation(data, config);
+    // console.log("checking data existence", dataRes);
+    // return;
     const updateDate = await dataRes.updateService(req);
-    if (updateDate.status === "error")
+    if (updateDate?.status === "Error")
       return handleErrorResponse(
         res,
         updateDate.statusCode,
@@ -253,8 +258,11 @@ const genericController = {
       const { record, tablemodel } = req.body;
       const { tbl } = tablemodel;
       const model = db.models[tbl];
-      console.log(record, tablemodel, model);
+      // console.log(record, tablemodel, model);
 
+      await model.create({
+        ...record,
+      });
       res.status(200).json({
         status: "Ok",
         msg: "Operation successful",

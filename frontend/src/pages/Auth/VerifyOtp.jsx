@@ -5,13 +5,13 @@ import { Button, Form, Input } from 'antd'
 // import utils from '../../../helpers/utility_func'
 // import { useNavigate } from 'react-router-dom'
 // import RedirectRoute from '../../../protectedRoute/RedirectRoute'
-import { useAuth } from '../../../context/AuthContext'
+// import { useAuth } from '../../../context/AuthContext'
 
 const VerifyOtp = () => {
-    const { loading, otpVerifyLogin } = useAuth()
+    // const { loading, otpVerifyLogin } = useAuth()
 
     const handleOTPVerificaton = async (values) => {
-        await otpVerifyLogin(values)
+        // await otpVerifyLogin(values)
     }
 
     return (
@@ -21,7 +21,7 @@ const VerifyOtp = () => {
 
                 <div className="md:max-w-md mx-auto md:p-12 p-6 bg-[#f5f5f5] rounded">
                     <div className='flex justify-end'>
-                        <Button icon={<RollbackOutlined />} href="/otp-request" />
+                        <Button icon={<RollbackOutlined />} href="/otp_request" />
 
                     </div>
                     <div className='mt-5'>
@@ -59,7 +59,7 @@ const VerifyOtp = () => {
                         </Form.Item>
 
                         <Form.Item>
-                            <Button block type="primary" htmlType="submit" loading={loading}>
+                            <Button block type="primary" htmlType="submit" >
                                 Verify Otp
                             </Button>
                         </Form.Item>

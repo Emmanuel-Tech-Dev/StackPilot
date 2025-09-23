@@ -1,27 +1,26 @@
 import { MailOutlined, RollbackOutlined } from '@ant-design/icons'
 import { Button, Form, Input, message, notification } from 'antd'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import utils from '../../../helpers/utility_func'
+import utils from '../../dependencies/helpers/utilities';
 
-const RequestOtp = () => {
-    const navigate = useNavigate()
+const RequestResetLink = () => {
     const [loading, setLoading] = useState(false)
+    const navigate = useNavigate()
 
-
-    const handleOtpRequest = async (values) => {
+    const requestResetLinik = async (values) => {
         setLoading(true)
         try {
 
-            const res = await utils.otpRequest(values)
+            const res = await utils.passwordReset(values)
             if (res.status === "ok") {
                 message.success(res.message)
                 notification.info({
-                    message: "Please check your email for your OTP code",
+                    message: "Please check your email for your password reset link",
                     placement: "bottomRight"
                 })
                 setLoading(false)
-                navigate("/otp-verify")
+                // navigate("/password-reset-verify")
             } else {
                 message.error(res.message)
                 setLoading(false)
@@ -29,11 +28,10 @@ const RequestOtp = () => {
 
         } catch (error) {
             console.log(error)
+            message.error("failed to request for a rest link")
             setLoading(false)
-            message.error("failed to request otp")
         }
     }
-
 
     return (
         <div className="h-screen px-4 py-16 md:p-16">
@@ -47,17 +45,17 @@ const RequestOtp = () => {
                     <img
                         src="../img/logo.png"
                         alt="logo"
-                        className="w-32 mx-auto mb-3"
+                        className="w-32 mx-auto mb-5"
                     />
-                    <h2 className="text-2xl font-bold mb-3 text-center">OTP Sign Up</h2>
-                    <h2 className=" font-bold mb-4 text-center">Request OTP code</h2>
+                    {/* <h2 className="text-2xl font-bold mb-6 text-center">OTP Sign Up</h2> */}
+                    <h2 className=" font-bold mb-6 text-center">Request Password</h2>
 
                 </div>
                 <Form
                     name="login"
                     layout="vertical"
                     initialValues={{ remember: true }}
-                    onFinish={handleOtpRequest}
+                    onFinish={requestResetLinik}
                     className="space-y-3"
                 >
                     <Form.Item
@@ -77,17 +75,17 @@ const RequestOtp = () => {
 
                     <Form.Item>
                         <Button block type="primary" htmlType="submit" loading={loading}>
-                            Request Otp
+                            Request Reset Link
                         </Button>
                     </Form.Item>
                 </Form>
 
                 <div className="mt-5 text-center text-sm">
-                    <p>Don&apos;t have an account? <Link to="/sign-up" className="text-blue-500 font-semibold">Sign up</Link></p>
+                    <p>Don't have an account? <Link to="/create_account" className="text-blue-500 font-semibold">Sign up</Link></p>
                 </div>
             </div>
         </div>
     )
 }
 
-export default RequestOtp
+export default RequestResetLink
