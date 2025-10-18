@@ -1,1 +1,0 @@
-2025-08-28T14:52:41.149Z [WARN] {"timestamp":"2025-08-28T14:52:41.139Z","event":"USER_LOGOUT_FAILED","statusCode":401,"type":"AuthError","message":"Invalid access token","meta":{"user":{},"request":{"userAgent":"PostmanRuntime/7.45.0","ip":"::1","method":"POST","path":"/logout"}}}

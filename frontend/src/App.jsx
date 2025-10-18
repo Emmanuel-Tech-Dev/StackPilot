@@ -12,7 +12,7 @@ import { DropdownSidebarLayout } from '@/layout/Layout';
 import UserManagementLayout from '@/layout/userManagementLayout';
 
 // Pages
-import Admin from './pages/Admin';
+
 import SystemSettings from '@/pages/Settings/SystemSettings';
 import UserManagement from '@/pages/UserManagement/UserManagement';
 import Roles from './pages/UserManagement/Roles';
@@ -27,6 +27,15 @@ import RequestResetLink from './pages/Auth/RequestResetLink';
 import RequestOtp from './pages/Auth/RequestOtp';
 import VerifyOtp from './pages/Auth/VerifyOtp';
 import NotFound from './components/404error';
+import Projects from './pages/ProjectManagement/Projects';
+import Dashboard from './pages/Dashboard';
+import ProjectDetails from './pages/ProjectManagement/ProjectDetails';
+import PerformanceDashboard from './pages/Admin';
+import Volunteer from './pages/Volunteer/Volunteer';
+import Department from './pages/Department';
+import Campaign from './pages/Campaign/Campaign';
+import CampaignInfo from './pages/Campaign/CampaignInfo';
+import Category from './pages/Campaign/Category';
 
 
 const LoadingSpinner = ({ tip = "Loading...", fullscreen = false }) => (
@@ -197,9 +206,9 @@ function App() {
 
 
         }>
-          <Route index element={<Admin />} />
-          <Route path="home" element={<Admin />} />
-
+          <Route index element={<Volunteer />} />
+          <Route path="home" element={<Dashboard />} />
+          {/* <Route path='campaign' element={} /> */}
           {/* Settings sub-routes */}
           <Route path="settings">
             <Route index element={<Navigate to="api_settings" replace />} />
@@ -215,6 +224,23 @@ function App() {
             <Route path="roles" element={<Roles />} />
             <Route path="resources" element={<Resources />} />
             <Route path="permissions" element={<Permission />} />
+          </Route>
+
+          <Route path="project" >
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<Projects />} />
+            <Route path="details/:projectId" element={<ProjectDetails />} />
+          </Route>
+          <Route path="department" >
+            <Route index element={<Navigate to="overview" replace />} />
+            <Route path="overview" element={<Department />} />
+            {/* <Route path="details/:projectId" element={<ProjectDetails />} /> */}
+          </Route>
+
+          <Route path="campaign" >
+            <Route index element={<Campaign />} />
+            <Route path="category" element={<Category />} />
+            <Route path="info/:id" element={<CampaignInfo />} />
           </Route>
         </Route>
 

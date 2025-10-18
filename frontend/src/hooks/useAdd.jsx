@@ -13,6 +13,7 @@ import useDynamicForm from './useDynamicForm';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
+const { RangePicker } = DatePicker;
 //this hook is based on zustand
 const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
     const valuesStore = ValuesStore();
@@ -346,6 +347,30 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
                                 </div>
                             </div>);
                         break;
+                    } case 'dateRange': {
+                        html.push(
+                            <div key={`${name}_input_wrapper`} className={`${marginBottom}`}>
+                                <span className="">{realName}{showValidatorIndicator}:</span>
+                                <div className='mt-1'>
+                                    <RangePicker
+                                        key={`${name}_editable`}
+                                        value={value ? [
+                                            value.split(',')[0] ? dayjs(value.split(',')[0]) : null,
+                                            value.split(',')[1] ? dayjs(value.split(',')[1]) : null
+                                        ] : null}
+                                        placeholder={['Start Date', 'End Date']}
+                                        onChange={(dates, dateStrings) => {
+                                            // Handle null dates when clearing
+                                            const dateValue = dates ? [dateStrings[0] ? dateStrings[0] : null, dateStrings[1] ? dateStrings[1] : null].join(',') : dateStrings ? dateStrings.join(',') : null;
+                                            changeValue(dateValue, key);
+                                        }}
+                                        allowEmpty={[true, true]}
+                                        {...sqlSelectResult[name]}
+                                    />
+                                </div>
+                            </div>
+                        );
+                        break;
                     }
                     case 'customGenerateString': {
                         const cid = cryptoRandomString({ length: 10 });
@@ -475,7 +500,7 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
                                         disabled={disabled}
                                         key={`${name}_editable`}
                                         placeholder={`Select ${realName}`}
-                                        className='bd-highlight flex-grow-1x w-full'
+                                        className='w-full flex-grow-1x'
                                         onChange={v => changeValue(v, key)}
                                         value={value}
                                         options={sqlSelectResult[name]}
@@ -659,7 +684,7 @@ const useAdd = (tablesMetaData, whereKeyName, autoFetch = true) => {
                     return shouldDrag ? draggable.drag(modal) : modal
                 }}
                 confirmLoading={loading}
-                zIndex={1002} title={title} width={width} open={showModal} onOk={handleOk} onCancel={e => setShowModal(false)} okText={okText} okButtonProps={okButtonProps}>
+                zIndex={9999} title={title} width={width} open={showModal} onOk={handleOk} onCancel={e => setShowModal(false)} okText={okText} okButtonProps={okButtonProps}>
 
                 <div className="grid grid-cols-1 gap-2">
                     <div>

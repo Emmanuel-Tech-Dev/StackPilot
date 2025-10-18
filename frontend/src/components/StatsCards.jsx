@@ -11,7 +11,7 @@ import {
 } from '@ant-design/icons';
 import Loader from './Loader';
 
-const StatsCards = ({ data = {}, loading = false }) => {
+const StatsCards = ({ data = {}, loading = false, config = { stats: true, info: true, summary: true } }) => {
     // Sample data - replace with your actual data
     const statsData = {
         totalLogs: data?.total || 1247,
@@ -23,6 +23,7 @@ const StatsCards = ({ data = {}, loading = false }) => {
         ...data
     };
 
+    const { stats, info, summary } = config
 
 
 
@@ -52,7 +53,7 @@ const StatsCards = ({ data = {}, loading = false }) => {
     return (
         <div className="w-full space-y-4">
             {/* Main Statistics Row */}
-            <Row gutter={[16, 16]}>
+            {stats && <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12} lg={6}>
                     <Card className="h-full border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
                         {loading ? <Loader active={loading} rows={2} width="100%" /> :
@@ -142,10 +143,11 @@ const StatsCards = ({ data = {}, loading = false }) => {
 
                     </Card>
                 </Col>
-            </Row>
+            </Row>}
+
 
             {/* Time Information Row */}
-            <Row gutter={[16, 16]}>
+            {info && <Row gutter={[16, 16]}>
                 <Col xs={24} lg={12}>
                     <Card className="h-full bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                         {loading ? <Loader active={loading} rows={2} width="100%" /> :
@@ -214,9 +216,9 @@ const StatsCards = ({ data = {}, loading = false }) => {
                     </Card>
                 </Col>
             </Row>
+            }
 
-            {/* Summary Card */}
-            <Row>
+            {summary && <Row>
                 <Col span={24}>
                     <Card className="bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200">
                         {loading ? <Loader active={loading} rows={2} width="100%" /> :
@@ -248,7 +250,8 @@ const StatsCards = ({ data = {}, loading = false }) => {
 
                     </Card>
                 </Col>
-            </Row>
+            </Row>}
+
         </div>
     );
 };

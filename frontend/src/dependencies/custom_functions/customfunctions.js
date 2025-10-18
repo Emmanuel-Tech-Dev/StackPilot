@@ -1,3 +1,15 @@
+import {
+  DollarOutlined,
+  GiftOutlined,
+  HeartOutlined,
+  ShopOutlined,
+  SoundOutlined,
+  TrophyOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import Settings from "../helpers/settings";
+import utils from "../helpers/utilities";
+
 const CustomFunction = {
   normalizeData: (apiData) => {
     // Add a safety check for apiData itself
@@ -62,6 +74,62 @@ const CustomFunction = {
         value: item.count,
       })),
     };
+  },
+
+  getPartnerTypeConfig: (type) => {
+    const configs = {
+      business: { color: "blue", icon: ShopOutlined, label: "Business" },
+      influencer: {
+        color: "purple",
+        icon: UserOutlined,
+        label: "Influencer",
+      },
+      sponsor: { color: "gold", icon: TrophyOutlined, label: "Sponsor" },
+      NGO: { color: "green", icon: HeartOutlined, label: "NGO" },
+    };
+    return configs[type] || configs.business;
+  },
+
+  // Helper function to get contribution type config
+  getContributionTypeConfig: (type) => {
+    const configs = {
+      monetary: {
+        color: "success",
+        icon: DollarOutlined,
+        label: "Monetary",
+      },
+      in_kind: {
+        color: "processing",
+        icon: GiftOutlined,
+        label: "In-Kind",
+      },
+      promotion: {
+        color: "warning",
+        icon: SoundOutlined,
+        label: "Promotion",
+      },
+    };
+    return configs[type] || configs.monetary;
+  },
+
+  async getData(critera, endpoint) {
+    try {
+      const res = await utils.requestWithReauth(
+        "post",
+        `${Settings.baseUrl}v1.0/${endpoint}`,
+        null,
+        critera
+      );
+
+      if (res?.status === "Ok") {
+        const data = res?.data;
+        return data;
+      } else {
+        utils.showNotification("Error", res?.msg, "text-red-500");
+      }
+    } catch (error) {
+      utils.showNotification("Error", error?.message, "text-red-500");
+    }
   },
 };
 
