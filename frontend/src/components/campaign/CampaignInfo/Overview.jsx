@@ -1,15 +1,13 @@
-import { Badge, Calendar, Card, Empty, Progress, Tag, Tooltip } from 'antd'
+import { Badge, Calendar, Card, Progress, Tag, Tooltip } from 'antd'
 import React from 'react'
 import utils from '../../../dependencies/helpers/utilities'
 import { BulbOutlined, CalendarOutlined, CheckCircleOutlined, FileTextOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
-import CustomFunction from '../../../dependencies/custom_functions/customfunctions'
 
 const Overview = ({ record = {} }) => {
-
+    console.log(record)
 
     const remainingAmount = record?.fundraising_goal - record?.amount_raised || 0
-    const promoChannels = JSON.parse(record?.promotion_channels || "[]");
 
     const start = dayjs(record?.start_date);
     const end = dayjs(record?.end_date);
@@ -252,17 +250,9 @@ const Overview = ({ record = {} }) => {
 
                     </div>
 
-                    <div className='col-span-1 space-y-3'>
+                    <div className='col-span-1'>
                         <Card title="Campaign Reminder" size="small">
                             <Calendar fullscreen={false} fullCellRender={fullCellRender} />
-                        </Card>
-                        <Card title="Promotion Channels" size='small'>
-                            {promoChannels.length === 0 && <Empty description="No promotion channels" />}
-                            {Array.isArray(promoChannels) && promoChannels.map(channel => (
-                                <Tag color={CustomFunction.getChannelColor(channel)} key={channel}>
-                                    {channel}
-                                </Tag>
-                            ))}
                         </Card>
                     </div>
 
