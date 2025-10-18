@@ -6,6 +6,7 @@ import Highlighter from "react-highlight-words";
 import { SearchOutlined } from "@ant-design/icons";
 import qs from "qs";
 
+
 const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id", expandable = true, expandableKeys = {}) => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -19,6 +20,9 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id", expa
     const [searchText, setSearchText] = useState("");
     const [searchedColumn, setSearchedColumn] = useState("");
     const searchInput = useRef(null);
+    const [ExpandableContent, setExpandableContent] = useState()
+    const [expandableRecord, setExpandableRecord] = useState({})
+    const [expandedRowKeys, setExpandedRowKeys] = useState([]);
 
     // Initialize table parameters with proper defaults
     const [tableParams, setTableParams] = useState(() => ({
@@ -182,9 +186,9 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id", expa
         JSON.stringify(tableParams), [tableParams]
     );
 
-    useEffect(() => {
-        fetchData();
-    }, [tableParamsString]); // Use memoized string
+    // useEffect(() => {
+    //     fetchData();
+    // }, [tableParamsString]); // Use memoized string
 
     const refreshData = useCallback(() => {
         fetchData();
@@ -295,6 +299,7 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id", expa
             size="small"
             pagination={tableParams.pagination}
             onChange={handleTableChange}
+        // scroll={{ x: "max-content" }}
         />
     ), [rowSelectionConfig, columns, data, loading, tableParams.pagination, handleTableChange, rowKey]);
 
@@ -307,47 +312,32 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id", expa
             dataSource={data}
             expandable={expandable && {
                 expandedRowRender: (record) => {
-                    let parsed = null;
-                    // console.log(record?.level)
-                    try {
-                        // raw looks like: "timestamp [HTTP] {JSON}"
-                        const jsonPart = record.raw.split(`[${record?.level}]`)[1]?.trim();
-                        if (jsonPart) {
-                            parsed = JSON.parse(jsonPart);
-                            // console.log(parsed);
-                        }
-                    } catch (e) {
-                        console.error("Failed to parse raw log JSON:", e);
-                    }
 
                     return (
-                        <Descriptions bordered size="small" title="More Details">
-                            <Descriptions.Item label="Type">{record.type}</Descriptions.Item>
-                            <Descriptions.Item label="Filename">{record.filename}</Descriptions.Item>
-                            <Descriptions.Item label="Line Number">{record.lineNumber}</Descriptions.Item>
-                            <Descriptions.Item label="Raw">
-
-                                {record.raw}
-
-                            </Descriptions.Item>
-                            {parsed?.meta && (
-                                <Descriptions.Item label="Meta">
-
-                                    {JSON.stringify(parsed.meta, null, 2)}
-
-                                </Descriptions.Item>
-                            )}
-                        </Descriptions>
+                        <>
+                            {ExpandableContent}
+                        </>
                     );
+                },
+                accordion: true,
+                onExpand: (expanded, record) => {
+                    setExpandableRecord(record)
+                    // console.log(expandableRecord)
+                    setExpandedRowKeys(expanded ? [record.id] : []);
                 }
                 ,
+                expandRowByClick: true
+
+
             }}
+
             loading={loading}
             size="small"
             pagination={tableParams.pagination}
             onChange={handleTableChange}
         />
-    ), [rowSelectionConfig, columns, data, loading, tableParams.pagination, handleTableChange, rowKey]);
+    ), [rowSelectionConfig, columns, data, loading, tableParams.pagination,
+        handleTableChange, rowKey, ExpandableContent, expandableRecord, expandedRowKeys]);
 
     const tableWithHeader = useCallback((header, extraProps = {}) => {
         return (
@@ -455,7 +445,12 @@ const useTable = (initTblParams = {}, endpoint = "v1/goals", rowKey = "id", expa
         clearSelection,
         getColumnSearchProps,
         setColFilters,
-        tableExpandable
+        tableExpandable,
+        ExpandableContent,
+        setExpandableContent,
+        expandableRecord,
+        expandedRowKeys,
+        setExpandedRowKeys,
     };
 };
 

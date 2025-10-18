@@ -27,8 +27,10 @@ const {
 } = require("./shared/middleWare/authMiddleware.js");
 
 const socketHelper = require("./shared/helpers/socket.js");
+const CampaignEndpoints = require("./modules/AppRoutes/campaignRoute.js");
 
 const app = express();
+const server = http.createServer(app);
 // const server = http.createServer(app);
 
 const PORT = process.env.PORT || 3000;
@@ -121,6 +123,8 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+new CampaignEndpoints(app);
 app.use("/api/v1", baseRoute);
 app.use("/api/v1/auth", userRoute);
 app.use("/api/v1/upload", uploadRoute);
@@ -319,7 +323,7 @@ async function startServer() {
       console.log("Table models synchronized");
     }
 
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server started on port ${PORT}`);
     });
   } catch (error) {

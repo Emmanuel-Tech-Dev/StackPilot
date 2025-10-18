@@ -888,7 +888,7 @@ const utils = {
         placement = "bottomRight",
         config = {}
     ) {
-        notification.open({
+        message.open({
             message: (
                 <label className={`font-bolder ${type}`}>
                     <i className="fas fa-exclamation-circle"></i> {msg}
@@ -937,6 +937,17 @@ const utils = {
         const minutes = Math.floor((seconds % 3600) / 60);
         return `${days}d ${hours}h ${minutes}m`;
     },
+    getDaysFromRawDate(start, end) {
+        const startDate = dayjs(start);
+        const endDate = dayjs(end);
+        return endDate.diff(startDate, 'days');
+    },
+    getDaysFromRawDateV2(start, end) {
+        const startDate = new Date(start)
+        const endDate = new Date(end)
+        const days = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+        return days
+    }
 }
 
 

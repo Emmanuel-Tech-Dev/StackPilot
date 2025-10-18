@@ -116,7 +116,10 @@ class CrudOperation {
 
   async readAService(req) {
     try {
-      const record = await this.tableModel.findByPk(this.id);
+      const record = await this.tableModel.findByPk(this.id, {
+        attributes: req?.query,
+      });
+      // console.log("Parameters", req.query);
       //   console.log("A single read:", record);
       if (!record) {
         throw new AppError(
@@ -490,19 +493,19 @@ class CrudOperation {
       );
 
       if (!updatedRecord) {
-           const res = {
-             message: "Data not updated",
-             status: "Error",
-             statusCode: 400,
-           }
+        const res = {
+          message: "Data not updated",
+          status: "Error",
+          statusCode: 400,
+        };
         return res;
       }
-      return  {
+      return {
         message: "Data successfully updated",
         status: "Ok",
         // data: updatedRecord,
         statusCode: 200,
-      }
+      };
     } catch (error) {
       console.error("Error updating record:", error);
       throw new AppError(
@@ -690,7 +693,7 @@ class CrudOperation {
             is_public: true,
             resource_type: "BROWSER_ROUTE",
           },
-          order: [["order", "DESC"]],
+          order: [["order", "Asc"]],
           // exclude: ["createdAt", "updatedAt"],
           // plain: true,
         });
@@ -702,7 +705,7 @@ class CrudOperation {
             is_public: false,
             resource_type: "BROWSER_ROUTE",
           },
-          order: [["order", "DESC"]],
+          order: [["order", "Asc"]],
           // exclude: ["createdAt", "updatedAt"],
           // plain: true,
         });

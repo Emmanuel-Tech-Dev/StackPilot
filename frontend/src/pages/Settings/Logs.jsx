@@ -99,7 +99,7 @@ const Logs = () => {
                     <Breadcrumb
                         items={[
                             { title: <a href="#">Settings</a> },
-                            { title: <a href='admin/settings/system_logs'>System Logs</a> },
+                            { title: <a href='/admin/settings/system_logs'>System Logs</a> },
                             { title: <h1 className="font-semibold">Reports</h1> },
                         ]}
                     />
@@ -108,7 +108,7 @@ const Logs = () => {
 
                 <Space size="small">
 
-                    <Button href="admin/settings/system_logs">
+                    <Button href="/admin/settings/system_logs">
                         <i className='fa fa-arrow-left'></i> Logs Overview
                     </Button>
 

@@ -6,34 +6,39 @@
     "auditLog": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\.9e079170333b172cb8dca6a7a42cc695e3445b2f-audit.json",
     "files": [
         {
-            "date": 1758232058914,
-            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-09-18",
-            "hash": "9363f54c8b7718429d7608ce1821db90576d693c58c37fdf72d7b1829c9bda75"
+            "date": 1760269865822,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-10-12",
+            "hash": "47b0be6900ac3a6b08bd2dec56f6a0e3d097aad16bdb8babb45ca438072647a9"
         },
         {
-            "date": 1758268002901,
-            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-09-19",
-            "hash": "4abfbeda20ff137409b426fdf8480efbdd6f2b785d142eb78e60c651beb81e33"
+            "date": 1760355762590,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-10-13",
+            "hash": "0b4f9eb8d68bdba1f31d5a44201bbeba523f9cab043c96beb008ca881a45d26d"
         },
         {
-            "date": 1758368955506,
-            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-09-20",
-            "hash": "81ab79e865bc5c30d9552c6c9c1f15fdbca13aca9e548be59bc07320d14db4d7"
+            "date": 1760436513224,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-10-14",
+            "hash": "cbc623896d58c995b7a98b990ee1994af3c256fa9771c5b4d5da6cff2d6dc518"
         },
         {
-            "date": 1758460311286,
-            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-09-21",
-            "hash": "8d108b1373afa11c0fbbff29386e2d5e69931d05eabdc7f7535ddcbadd3f78e0"
+            "date": 1760524662191,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-10-15",
+            "hash": "5587d5d507cd21d35acecd9aad5ea7c01b92984775053a73eed30ea2f623fe79"
         },
         {
-            "date": 1758522466311,
-            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-09-22",
-            "hash": "5e50ab756d86b79c7204f13ca6777774bfa59ac04ecd2ae1f1c0129cf8f47445"
+            "date": 1760584776875,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-10-16",
+            "hash": "32fdc8231ffaee8bdc47600cb940976f2dedf9273b39cf1f05a305a910625c04"
         },
         {
-            "date": 1758632952583,
-            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-09-23",
-            "hash": "6c0d833c3f034005afe0a001a453b93e62753fadab8f9bf8e5d8a4e9bd48e1ad"
+            "date": 1760693503251,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-10-17",
+            "hash": "48385e3ea11fae926c519561040e583b47c0568e42349c6fc74b467bc364c291"
+        },
+        {
+            "date": 1760777737440,
+            "name": "F:\\2024 Projects\\12WeekYear_Management_System\\server\\resources\\logs\\query.log.2025-10-18",
+            "hash": "643a936734409bbbd4afe3595f42687fb6fd2d188bb19bb0a7bf44c1cad3b6c5"
         }
     ],
     "hashType": "sha256"
