@@ -47,11 +47,7 @@ const CampaignProfile = ({ record = {} }) => {
                         icon: <ProfileFilled />,
                         children: <Parteners campaignId={record.id} />
                     }
-                    , {
-                        key: "Promotion",
-                        label: "Promotion Channels",
-                        children: <PromotionChannels />
-                    },
+                    ,
                     {
                         key: "Donations",
                         label: "Donations",

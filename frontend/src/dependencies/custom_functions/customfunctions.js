@@ -112,6 +112,17 @@ const CustomFunction = {
     return configs[type] || configs.monetary;
   },
 
+  getChannelColor: (channel) => {
+    const colorMap = {
+      "Digital / Online": "blue",
+      "Traditional Media": "purple",
+      "Community Engagement": "green",
+      "Partnership Channels": "orange",
+      "Direct Outreach": "cyan",
+    };
+    return colorMap[channel] || "default";
+  },
+
   async getData(critera, endpoint) {
     try {
       const res = await utils.requestWithReauth(
